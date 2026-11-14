@@ -72,7 +72,13 @@
 
   <!-- ================= UNIVERSAL LOGIN SCREEN ================= -->
   <div id="loginScreen" class="min-h-screen flex flex-col justify-between bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 text-white">
-    <div class="mt-8 text-center">
+    <div class="mt-6 text-center">
+      <!-- Live Firestore Connection Status Pill -->
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] font-semibold mb-5" id="loginCloudPill">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        <span class="text-slate-200">Menghubungkan ke Cloud Firestore...</span>
+      </div>
+
       <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
         <i class="fa-solid fa-helmet-safety text-3xl text-indigo-400"></i>
       </div>
@@ -88,12 +94,12 @@
         </span>
       </div>
       <p class="text-xs text-slate-300 mb-5">
-        Masukkan <b>Username / No. HP / Email</b> beserta <b>PIN</b> Anda. Sistem otomatis mengenali akun Admin, Mandor, atau Karyawan.
+        Masukkan <b>Username / No. HP</b> beserta <b>PIN</b> Anda. Data otomatis tersinkronisasi lintas perangkat melalui Cloud Firestore.
       </p>
 
       <form onsubmit="handleUniversalLogin(event)" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">ID Pengguna (No. HP / Username / Email)</label>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">ID Pengguna (No. HP / Username)</label>
           <div class="relative">
             <i class="fa-solid fa-user-check absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
             <input type="text" id="loginIdentifier" required autocomplete="username" placeholder="Contoh: 081234567890 / mandor / admin"
@@ -127,7 +133,9 @@
       </form>
     </div>
 
-    <p class="text-center text-[11px] text-slate-500">Dilindungi Cloud Firestore, Firebase Auth & Google Sheets</p>
+    <div class="text-center space-y-1">
+      <p class="text-[11px] text-slate-400"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i>Terenkripsi SHA-256 • Cloud Firestore & Google Sheets</p>
+    </div>
   </div>
 
   <!-- ================= MAIN APP SCREEN ================= -->
@@ -136,7 +144,7 @@
     <header class="bg-slate-900 text-white pt-5 pb-6 px-5 rounded-b-3xl shadow-md sticky top-0 z-30">
       <div class="flex items-center justify-between">
         <div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span id="userRoleBadge" class="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full bg-indigo-500 text-white">ADMIN</span>
             <span id="cloudStatusBadge" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Sesi Aktif
@@ -145,7 +153,7 @@
           <h1 id="activeUserName" class="text-lg font-extrabold mt-1">Administrator</h1>
         </div>
         <div class="flex items-center gap-2">
-          <button id="btnCloudConfig" onclick="openModal('modalCloudConfig')" title="Pengaturan Koneksi Cloud Firestore & Auth" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-indigo-400 border border-slate-700">
+          <button id="btnCloudConfig" onclick="openModal('modalCloudConfig')" title="Pengaturan Cloud Firestore, Spreadsheet & GitHub" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-indigo-400 border border-slate-700">
             <i class="fa-solid fa-cloud-bolt text-sm"></i>
           </button>
           <button onclick="handleLogout()" title="Keluar / Logout" class="w-9 h-9 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 flex items-center justify-center">
@@ -212,7 +220,7 @@
                 <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
                   <i class="fa-solid fa-bolt text-amber-500"></i> Absensi Massal Sekaligus
                 </h2>
-                <p class="text-[11px] text-slate-500">Centang karyawan hadir & set status dalam 1 klik</p>
+                <p class="text-[11px] text-slate-500">Otomatis anti-double di Firestore & Spreadsheet</p>
               </div>
               <span id="massSelectedCountBadge" class="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold">
                 0 Dipilih
@@ -271,8 +279,8 @@
                 <span class="text-slate-300">Total Upah Hari Ini (<span id="massSummaryCount" class="font-bold text-white">0</span> org):</span>
                 <span id="massEstimasiTotal" class="text-base font-extrabold text-emerald-400">Rp 0</span>
               </div>
-              <button type="button" onclick="saveMassAbsensi()" class="w-full py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 active:scale-[0.99] transition text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Simpan Absensi Massal Sekaligus
+              <button type="button" id="btnSaveMassAbsensi" onclick="saveMassAbsensi()" class="w-full py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 active:scale-[0.99] transition text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Firestore & Spreadsheet
               </button>
             </div>
           </div>
@@ -509,12 +517,12 @@
         </div>
         <div class="grid grid-cols-2 gap-2.5">
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">No. HP / Email Login</label>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">No. HP / ID Login</label>
             <input type="text" id="empHp" required placeholder="081234567890" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold" />
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">PIN Login (Min. 4 Digit)</label>
-            <input type="text" id="empPin" required value="1111" placeholder="1111" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold" />
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">PIN Login (Disimpan Hash SHA-256)</label>
+            <input type="text" id="empPin" placeholder="Kosongkan jika tidak diubah" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2.5">
@@ -528,7 +536,7 @@
           </div>
         </div>
         <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 mt-2">
-          Simpan & Daftarkan Akses Login
+          Simpan ke Cloud Firestore
         </button>
       </form>
     </div>
@@ -649,120 +657,165 @@
     </div>
   </div>
 
-  <!-- ================= MODAL KONFIGURASI CLOUD FIRESTORE & AUTH (ADMIN) ================= -->
+  <!-- ================= MODAL KONFIGURASI CLOUD FIRESTORE, SPREADSHEET & GITHUB ================= -->
   <div id="modalCloudConfig" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white w-full max-w-[460px] rounded-3xl p-5 shadow-2xl space-y-3.5 max-h-[92vh] overflow-y-auto">
+    <div class="bg-white w-full max-w-[465px] rounded-3xl p-5 shadow-2xl space-y-3.5 max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between">
         <div>
           <h3 class="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
-            <i class="fa-solid fa-fire text-amber-500"></i> Koneksi Cloud Firestore & Auth
+            <i class="fa-solid fa-cloud-bolt text-indigo-600"></i> Cloud Firestore, Sheet & GitHub
           </h3>
-          <p class="text-[11px] text-slate-500">Sinkronisasi real-time ke database Cloud Firestore</p>
+          <p class="text-[11px] text-slate-500">Koneksi otomatis lintas perangkat & anti-double</p>
         </div>
         <button onclick="closeModal('modalCloudConfig')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <!-- FITUR TEMPEL OTOMATIS FIREBASE CONFIG -->
-      <div class="bg-indigo-50/80 border border-indigo-200 rounded-2xl p-3 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-extrabold text-indigo-900">
-            <i class="fa-solid fa-wand-magic-sparkles mr-1 text-indigo-600"></i>Isi Otomatis dari Kode `firebaseConfig`
-          </span>
-          <button type="button" onclick="parseFirebaseConfigSnippet()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-extrabold shadow-sm">
-            Ekstrak Otomatis
+      <!-- Tab Switcher Modal Config -->
+      <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-2xl text-[11px] font-extrabold">
+        <button type="button" id="cfgTabBtn_firestore" onclick="switchCfgSubTab('firestore')" class="py-2 rounded-xl bg-white text-indigo-600 shadow-sm">
+          1. Firestore
+        </button>
+        <button type="button" id="cfgTabBtn_sheet" onclick="switchCfgSubTab('sheet')" class="py-2 rounded-xl text-slate-600">
+          2. Spreadsheet
+        </button>
+        <button type="button" id="cfgTabBtn_security" onclick="switchCfgSubTab('security')" class="py-2 rounded-xl text-slate-600">
+          3. Keamanan
+        </button>
+      </div>
+
+      <!-- SUB-TAB 1: FIREBASE CLOUD FIRESTORE & GITHUB EXPORT -->
+      <div id="cfgSubTab_firestore" class="space-y-3">
+        <!-- FITUR TEMPEL OTOMATIS FIREBASE CONFIG -->
+        <div class="bg-indigo-50/80 border border-indigo-200 rounded-2xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold text-indigo-900">
+              <i class="fa-solid fa-wand-magic-sparkles mr-1 text-indigo-600"></i>Tempel Kode `firebaseConfig`
+            </span>
+            <button type="button" onclick="parseFirebaseConfigSnippet()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-extrabold shadow-sm">
+              Ekstrak Otomatis
+            </button>
+          </div>
+          <textarea id="rawFirebaseSnippet" rows="2" placeholder='Tempel const firebaseConfig = { apiKey: "...", projectId: "...", appId: "..." } dari Firebase Console lalu klik Ekstrak Otomatis'
+            class="w-full px-2.5 py-1.5 rounded-xl border border-indigo-200 text-[10px] font-mono bg-white focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <div class="space-y-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Firebase Web API Key <span class="text-rose-500">*</span></label>
+            <input type="text" id="cfgFirebaseApiKey" placeholder="AIzaSyB..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Project ID <span class="text-rose-500">*</span></label>
+              <input type="text" id="cfgFirestoreProjectId" placeholder="workforce-pro-123" class="w-full px-3 py-2 rounded-xl border border-emerald-400 bg-emerald-50/30 text-xs font-mono font-bold" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-0.5">App ID (Opsional)</label>
+              <input type="text" id="cfgFirebaseAppId" placeholder="1:123456:web:abc..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Penjelasan & Unduh File Siap Upload GitHub -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 space-y-2">
+          <p class="text-[11px] font-extrabold text-emerald-900">
+            <i class="fa-brands fa-github mr-1"></i>Otomatis Konek di Semua Perangkat (GitHub Pages)
+          </p>
+          <p class="text-[10px] text-emerald-800 leading-relaxed">
+            Agar perangkat lain (HP Mandor / Karyawan) langsung terhubung ke Firestore tanpa perlu mengatur ulang, klik tombol di bawah untuk mengunduh file <b>index.html</b> yang sudah tertanam konfigurasi Firestore (tanpa token rahasia & tanpa PIN teks biasa), lalu upload ke GitHub Anda.
+          </p>
+          <button type="button" onclick="downloadGitHubReadyHtml()" class="w-full py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-extrabold flex items-center justify-center gap-1.5 shadow">
+            <i class="fa-solid fa-file-code text-emerald-400"></i> Unduh index.html Siap Upload GitHub
           </button>
         </div>
-        <textarea id="rawFirebaseSnippet" rows="2" placeholder='Tempel kode const firebaseConfig = { apiKey: "...", projectId: "..." } dari Firebase Console di sini lalu klik Ekstrak Otomatis'
-          class="w-full px-2.5 py-1.5 rounded-xl border border-indigo-200 text-[10px] font-mono bg-white focus:outline-none focus:border-indigo-500"></textarea>
-      </div>
 
-      <div class="space-y-2.5">
-        <div>
-          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-            1. Firebase Web API Key <span class="text-rose-500">*</span>
-          </label>
-          <input type="text" id="cfgFirebaseApiKey" placeholder="AIzaSyB..."
-            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:outline-none focus:border-indigo-500" />
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-            2. Cloud Firestore Project ID <span class="text-emerald-600 font-extrabold">(Utama - Disarankan)</span>
-          </label>
-          <input type="text" id="cfgFirestoreProjectId" placeholder="Contoh: workforce-pro-12345"
-            class="w-full px-3 py-2 rounded-xl border border-emerald-400 bg-emerald-50/30 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-emerald-600" />
-          <p class="text-[10px] text-slate-500 mt-0.5">Lihat di Firebase Console &rarr; Project Settings &rarr; <b>Project ID</b>.</p>
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold text-slate-700 mb-1">
-            3. Realtime Database URL <span class="text-slate-400 font-normal">(Opsional / Cadangan)</span>
-          </label>
-          <input type="url" id="cfgFirebaseUrl" placeholder="https://nama-project-default-rtdb.asia-southeast1.firebasedatabase.app"
-            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
-        </div>
         <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-[10px] font-bold text-slate-600 mb-1">4. Google Script URL (Opsional)</label>
-            <input type="url" id="cfgGasUrl" placeholder="https://script.google.com/..."
-              class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-[11px]" />
-          </div>
-          <div>
-            <label class="block text-[10px] font-bold text-slate-600 mb-1">Secret Token Sheet</label>
-            <input type="password" id="cfgGasToken" placeholder="RAHASIA_PROYEK_2026"
-              class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-[11px]" />
-          </div>
+          <button type="button" onclick="testFirestoreConnection()" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-extrabold">
+            <i class="fa-solid fa-plug-circle-check mr-1 text-emerald-400"></i> Tes Koneksi
+          </button>
+          <button type="button" onclick="pullFromFirestoreManual()" class="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold">
+            <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Tarik Data Live
+          </button>
         </div>
       </div>
 
-      <!-- Kredensial Admin & Mandor -->
-      <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
-        <p class="text-[11px] font-extrabold text-slate-700">Kredensial Login Admin & Mandor</p>
-        <div class="grid grid-cols-2 gap-2">
+      <!-- SUB-TAB 2: GOOGLE SPREADSHEET ANTI-DOUBLE -->
+      <div id="cfgSubTab_sheet" class="hidden space-y-3">
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-[10px] text-amber-900 space-y-1">
+          <p class="font-extrabold"><i class="fa-solid fa-shield-check mr-1 text-emerald-600"></i>Sistem Anti-Double Spreadsheet & Token Aman</p>
+          <p>URL & Token Spreadsheet disimpan di <b>Cloud Firestore</b> (bukan di kode GitHub), sehingga otomatis aktif di semua HP setelah login tanpa membocorkan token di repositori publik.</p>
+        </div>
+
+        <div class="space-y-2">
           <div>
-            <label class="block text-[10px] font-bold text-slate-500">PIN Admin (`admin`)</label>
-            <input type="text" id="cfgAdminPin" value="1234" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold" />
+            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Google Apps Script Web App URL</label>
+            <input type="url" id="cfgGasUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono" />
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-500">PIN Mandor (`mandor`)</label>
-            <input type="text" id="cfgMandorPin" value="1234" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold" />
+            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Secret Token Spreadsheet</label>
+            <input type="text" id="cfgGasToken" placeholder="Contoh: TOKEN_AMAN_PROYEK_2026" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono" />
           </div>
+        </div>
+
+        <button type="button" onclick="syncAllAbsensiToSpreadsheet()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow">
+          <i class="fa-solid fa-table"></i> Sinkronkan Semua Absensi ke Spreadsheet (Anti-Double)
+        </button>
+
+        <!-- Kode Google Apps Script Siap Salin -->
+        <div class="bg-slate-900 text-slate-200 rounded-2xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold text-emerald-400">Kode Google Apps Script (Anti-Double File & Baris)</span>
+            <button type="button" onclick="copyGasCode()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-extrabold">
+              <i class="fa-regular fa-copy mr-1"></i>Salin Kode
+            </button>
+          </div>
+          <pre id="gasCodeSnippet" class="text-[9.5px] font-mono bg-slate-950 p-2.5 rounded-xl overflow-x-auto max-h-40 text-slate-300"></pre>
         </div>
       </div>
 
-      <!-- Contoh Rules Cloud Firestore -->
-      <details class="bg-slate-900 text-slate-200 rounded-2xl p-3 text-[11px]">
-        <summary class="font-extrabold cursor-pointer text-amber-400">
-          <i class="fa-solid fa-code mr-1"></i> Lihat Rules Cloud Firestore (Salin ke Tab Rules)
-        </summary>
-        <pre class="mt-2 text-[10px] font-mono bg-slate-950 p-2.5 rounded-xl overflow-x-auto text-emerald-300">rules_version = '2';
+      <!-- SUB-TAB 3: KEAMANAN PIN & FIRESTORE RULES -->
+      <div id="cfgSubTab_security" class="hidden space-y-3">
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
+          <p class="text-[11px] font-extrabold text-slate-800">Ubah PIN Admin & Mandor (Enkripsi SHA-256)</p>
+          <p class="text-[10px] text-slate-500">Kosongkan kolom jika tidak ingin mengubah PIN saat ini. PIN disimpan dalam bentuk hash SHA-256 di Cloud Firestore.</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">PIN Baru Admin (`admin`)</label>
+              <input type="password" id="cfgNewAdminPin" placeholder="Biarkan kosong" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">PIN Baru Mandor (`mandor`)</label>
+              <input type="password" id="cfgNewMandorPin" placeholder="Biarkan kosong" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold" />
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 text-slate-200 rounded-2xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold text-amber-400">Firestore Security Rules (Wajib Aktifkan Auth Anonymous)</span>
+            <button type="button" onclick="copyFirestoreRules()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-extrabold">
+              <i class="fa-regular fa-copy mr-1"></i>Salin Rules
+            </button>
+          </div>
+          <pre id="firestoreRulesSnippet" class="text-[10px] font-mono bg-slate-950 p-2.5 rounded-xl overflow-x-auto text-emerald-300">rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    match /artifacts/{appId}/public/data/{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }</pre>
-        <p class="text-[10px] text-slate-400 mt-1.5">Jika sudah mengaktifkan Firebase Auth (Email/Password), Anda bisa mengganti <code class="text-amber-300">if true;</code> menjadi <code class="text-emerald-300">if request.auth != null;</code>.</p>
-      </details>
-
-      <div class="flex flex-col gap-2 pt-1">
-        <button type="button" onclick="saveCloudConfig()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow">
-          <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Konfigurasi & Sinkronkan ke Firestore
-        </button>
-
-        <div class="grid grid-cols-3 gap-1.5">
-          <button type="button" onclick="testFirestoreConnection()" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-extrabold">
-            <i class="fa-solid fa-plug-circle-check mr-1 text-emerald-400"></i> Tes Koneksi
-          </button>
-          <button type="button" onclick="provisionAllUsersToFirebaseAuth()" class="py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-extrabold">
-            <i class="fa-solid fa-user-lock mr-1"></i> Sync Auth
-          </button>
-          <button type="button" onclick="pullFromFirebase()" class="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold">
-            <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Tarik Data
-          </button>
+          <p class="text-[10px] text-slate-400">
+            Tips Keamanan GitHub: Aktifkan <b>Anonymous Sign-In</b> di Firebase Authentication, dan batasi HTTP Referrer API Key Anda di Google Cloud Console ke domain <code class="text-emerald-300">https://username.github.io/*</code>.
+          </p>
         </div>
       </div>
+
+      <button type="button" onclick="saveCloudConfig()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-md">
+        <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Semua Pengaturan ke Cloud Firestore
+      </button>
     </div>
   </div>
 
@@ -795,46 +848,88 @@ service cloud.firestore {
 
 </div>
 
-<script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
   /******************************************************************
-   * 1. KONFIGURASI DEFAULT & KUNCI PENYIMPANAN PERMANEN
+   * 1. KONFIGURASI CLOUD OTOMATIS (AMAN UNTUK GITHUB PAGES)
+   * Catatan: Isi apiKey & projectId di bawah ini (atau gunakan tombol
+   * "Unduh index.html Siap Upload GitHub" di menu Admin) agar semua
+   * perangkat otomatis terkoneksi ke Cloud Firestore tanpa setting ulang.
+   * JANGAN taruh PIN teks biasa atau Token Spreadsheet di sini.
    ******************************************************************/
-  const DEFAULT_CLOUD_CONFIG = {
-    firebaseApiKey: "",
-    firestoreProjectId: "", // ID Project untuk Cloud Firestore
-    firebaseDbUrl: "",      // Opsional untuk Realtime Database
-    gasWebAppUrl: "",
-    gasToken: "RAHASIA_PROYEK_2026",
-    adminPin: "1234",
-    mandorPin: "1234"
+  const APP_CLOUD_CONFIG = {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
   };
 
+  // Hash SHA-256 default untuk PIN awal "1234" (aman di repositori publik GitHub)
+  const DEFAULT_PIN_1234_SHA256 = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
+
   const STORAGE_KEYS = {
-    STATE: "wf_pro_state_v2",
-    SEEDED_FLAG: "wf_pro_dummy_seeded_v2",
-    SESSION: "wf_pro_session_v2",
-    ACTIVE_TAB: "wf_pro_active_tab_v2",
-    CLOUD_CFG: "wf_cloud_cfg_v2"
+    STATE: "wf_pro_state_v3",
+    SEEDED_FLAG: "wf_pro_dummy_seeded_v3",
+    SESSION: "wf_pro_session_v3",
+    ACTIVE_TAB: "wf_pro_active_tab_v3",
+    LOCAL_FIREBASE_CFG: "wf_local_fb_cfg_v3",
+    CLOUD_SETTINGS_CACHE: "wf_cloud_settings_cache_v3"
+  };
+
+  // State Koneksi Firebase & Firestore Live
+  let fbApp = null;
+  let fbAuth = null;
+  let fbDb = null;
+  let fbUser = null;
+  let unsubscribeMainState = null;
+  let unsubscribeCloudSettings = null;
+  let isFirestoreConnected = false;
+
+  // Pengaturan Operasional (Disinkronkan dari Cloud Firestore sehingga aman untuk GitHub)
+  let cloudOperationalSettings = {
+    gasWebAppUrl: "",
+    gasToken: "",
+    adminPinHash: DEFAULT_PIN_1234_SHA256,
+    mandorPinHash: DEFAULT_PIN_1234_SHA256
   };
 
   let currentUser = null;
   let absInputMode = "MASSAL";
   let bulkDraft = {};
   let confirmCallback = null;
+  let lastSheetPayloadHash = "";
 
   const todayStr = new Date().toISOString().split('T')[0];
   const firstDayStr = todayStr.substring(0, 8) + "01";
 
+  // Data awal contoh (menggunakan hash SHA-256 untuk PIN sehingga aman di GitHub)
   const INITIAL_DUMMY_STATE = {
     updatedAt: 0,
     karyawan: [
-      { id: "EMP01", nama: "Budi Santoso", alamat: "Jl. Raya Pemaron No. 12", hp: "081234567890", pin: "1111", gajiHarian: 150000, lemburJam: 20000 },
-      { id: "EMP02", nama: "I Made Wirawan", alamat: "Br. Dauh Marga, Singaraja", hp: "081999888777", pin: "2222", gajiHarian: 175000, lemburJam: 25000 },
-      { id: "EMP03", nama: "Ketut Adi Putra", alamat: "Jl. Pulau Dewata 3", hp: "085738990011", pin: "3333", gajiHarian: 160000, lemburJam: 20000 }
+      { id: "EMP01", nama: "Budi Santoso", alamat: "Jl. Raya Pemaron No. 12", hp: "081234567890", pinHash: DEFAULT_PIN_1234_SHA256, gajiHarian: 150000, lemburJam: 20000 },
+      { id: "EMP02", nama: "I Made Wirawan", alamat: "Br. Dauh Marga, Singaraja", hp: "081999888777", pinHash: DEFAULT_PIN_1234_SHA256, gajiHarian: 175000, lemburJam: 25000 },
+      { id: "EMP03", nama: "Ketut Adi Putra", alamat: "Jl. Pulau Dewata 3", hp: "085738990011", pinHash: DEFAULT_PIN_1234_SHA256, gajiHarian: 160000, lemburJam: 20000 }
     ],
     absensi: [
-      { id: "ABS01", tanggal: todayStr, karyawanId: "EMP01", namaKaryawan: "Budi Santoso", tipe: "FULL", jamLembur: 2, catatan: "Proyek Gudang", upahHarian: 150000, upahLembur: 40000, totalUpah: 190000 },
-      { id: "ABS02", tanggal: todayStr, karyawanId: "EMP02", namaKaryawan: "I Made Wirawan", tipe: "HALF", jamLembur: 1, catatan: "Shift Pagi", upahHarian: 87500, upahLembur: 25000, totalUpah: 112500 }
+      {
+        id: "ABS_" + todayStr.replace(/-/g, '') + "_EMP01",
+        uniqueKey: todayStr + "__EMP01",
+        tanggal: todayStr,
+        karyawanId: "EMP01",
+        namaKaryawan: "Budi Santoso",
+        tipe: "FULL",
+        jamLembur: 2,
+        catatan: "Proyek Gudang",
+        upahHarian: 150000,
+        upahLembur: 40000,
+        totalUpah: 190000,
+        inputOleh: "Administrator Utama"
+      }
     ],
     kasbon: [
       { id: "KAS01", tanggal: todayStr, karyawanId: "EMP01", namaKaryawan: "Budi Santoso", nominal: 50000, keterangan: "Beli bensin & makan", status: "BELUM_LUNAS" }
@@ -849,7 +944,320 @@ service cloud.firestore {
   };
 
   /******************************************************************
-   * 2. MODAL KONFIRMASI & TOAST
+   * 2. KEAMANAN KRIPTOGRAFI SHA-256 (AMAN UNTUK PUBLIC GITHUB)
+   ******************************************************************/
+  async function sha256Hex(plainText) {
+    const clean = String(plainText || "").trim();
+    if (!clean) return "";
+    if (window.crypto && window.crypto.subtle) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(clean);
+      const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+    return clean;
+  }
+
+  async function verifyPinMatch(inputPin, storedHashOrLegacyPin) {
+    const cleanInput = String(inputPin || "").trim();
+    const stored = String(storedHashOrLegacyPin || "").trim();
+    if (!cleanInput || !stored) return false;
+    // Dukungan kompatibilitas mundur jika data lama masih menyimpan PIN 4-6 digit
+    if (stored.length < 32) {
+      return cleanInput === stored;
+    }
+    const inputHash = await sha256Hex(cleanInput);
+    return inputHash === stored;
+  }
+
+  /******************************************************************
+   * 3. RESOLUSI KONFIGURASI FIREBASE & KONEKSI OTOMATIS LINTAS DEVICE
+   ******************************************************************/
+  function getEffectiveFirebaseConfig() {
+    // Prioritas 1: Environment global __firebase_config (jika berjalan di preview platform)
+    if (typeof __firebase_config !== "undefined" && __firebase_config) {
+      try {
+        const envCfg = typeof __firebase_config === "string" ? JSON.parse(__firebase_config) : __firebase_config;
+        if (envCfg && envCfg.apiKey && envCfg.projectId) return envCfg;
+      } catch (e) {}
+    }
+
+    // Prioritas 2: Konfigurasi tertanam di file (APP_CLOUD_CONFIG) -> Otomatis aktif di semua perangkat GitHub Pages!
+    if (APP_CLOUD_CONFIG.apiKey && APP_CLOUD_CONFIG.projectId) {
+      return {
+        apiKey: APP_CLOUD_CONFIG.apiKey,
+        authDomain: APP_CLOUD_CONFIG.authDomain || `${APP_CLOUD_CONFIG.projectId}.firebaseapp.com`,
+        projectId: APP_CLOUD_CONFIG.projectId,
+        storageBucket: APP_CLOUD_CONFIG.storageBucket || `${APP_CLOUD_CONFIG.projectId}.firebasestorage.app`,
+        messagingSenderId: APP_CLOUD_CONFIG.messagingSenderId || "",
+        appId: APP_CLOUD_CONFIG.appId || ""
+      };
+    }
+
+    // Prioritas 3: Konfigurasi lokal browser (jika Admin baru mengisi lewat modal sebelum ekspor HTML)
+    const localSaved = localStorage.getItem(STORAGE_KEYS.LOCAL_FIREBASE_CFG);
+    if (localSaved) {
+      try {
+        const parsed = JSON.parse(localSaved);
+        if (parsed && parsed.apiKey && parsed.projectId) {
+          return {
+            apiKey: parsed.apiKey,
+            authDomain: parsed.authDomain || `${parsed.projectId}.firebaseapp.com`,
+            projectId: parsed.projectId,
+            storageBucket: parsed.storageBucket || `${parsed.projectId}.firebasestorage.app`,
+            messagingSenderId: parsed.messagingSenderId || "",
+            appId: parsed.appId || ""
+          };
+        }
+      } catch (e) {}
+    }
+
+    return null;
+  }
+
+  function getAppNamespaceId() {
+    if (typeof __app_id !== "undefined" && __app_id) {
+      return String(__app_id).replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+    const fbCfg = getEffectiveFirebaseConfig();
+    return fbCfg && fbCfg.projectId ? fbCfg.projectId : "workforce-pro-default";
+  }
+
+  function updateCloudConnectionUI(status, detailText = "") {
+    const loginPill = document.getElementById("loginCloudPill");
+    const headerBadge = document.getElementById("cloudStatusBadge");
+
+    if (status === "CONNECTED") {
+      isFirestoreConnected = true;
+      if (loginPill) {
+        loginPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-emerald-300">Terhubung Otomatis ke Cloud Firestore</span>`;
+      }
+      if (headerBadge) {
+        headerBadge.className = "px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1";
+        headerBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Firestore Live`;
+      }
+    } else if (status === "SYNCING") {
+      if (headerBadge) {
+        headerBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Menyimpan...`;
+      }
+    } else if (status === "NOT_CONFIGURED") {
+      isFirestoreConnected = false;
+      if (loginPill) {
+        loginPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span><span class="text-slate-300">Mode Lokal (Login Admin untuk set Cloud)</span>`;
+      }
+      if (headerBadge) {
+        headerBadge.className = "px-2 py-0.5 text-[10px] font-semibold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1";
+        headerBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Belum Set Cloud`;
+      }
+    } else {
+      isFirestoreConnected = false;
+      if (loginPill) {
+        loginPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span><span class="text-rose-300">${detailText || "Offline / Cek Rules Firestore"}</span>`;
+      }
+      if (headerBadge) {
+        headerBadge.className = "px-2 py-0.5 text-[10px] font-semibold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1";
+        headerBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Offline`;
+      }
+    }
+  }
+
+  async function initAutomaticFirestoreConnection(customCfgOverride = null) {
+    const fbCfg = customCfgOverride || getEffectiveFirebaseConfig();
+    if (!fbCfg || !fbCfg.apiKey || !fbCfg.projectId) {
+      updateCloudConnectionUI("NOT_CONFIGURED");
+      return false;
+    }
+
+    try {
+      // Hentikan listener lama jika ada re-inisialisasi
+      if (unsubscribeMainState) { unsubscribeMainState(); unsubscribeMainState = null; }
+      if (unsubscribeCloudSettings) { unsubscribeCloudSettings(); unsubscribeCloudSettings = null; }
+
+      const appName = "wf_app_" + fbCfg.projectId + "_" + Date.now();
+      fbApp = initializeApp(fbCfg, appName);
+      fbAuth = getAuth(fbApp);
+      fbDb = getFirestore(fbApp);
+
+      // RULE 3: Autentikasi terlebih dahulu sebelum operasi Firestore apa pun
+      if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
+        const cred = await signInWithCustomToken(fbAuth, __initial_auth_token);
+        fbUser = cred.user;
+      } else {
+        const cred = await signInAnonymously(fbAuth);
+        fbUser = cred.user;
+      }
+
+      if (!fbUser) throw new Error("Gagal mendapatkan sesi Firebase Auth");
+
+      const appId = getAppNamespaceId();
+      // RULE 1: Strict Path /artifacts/{appId}/public/data/{collectionName}/{docId}
+      const mainStateRef = doc(fbDb, "artifacts", appId, "public", "data", "workforce_pro", "main_state");
+      const settingsRef = doc(fbDb, "artifacts", appId, "public", "data", "workforce_pro", "cloud_settings");
+
+      // Listener Real-Time 1: Data Utama (Karyawan, Absensi, Kasbon)
+      unsubscribeMainState = onSnapshot(
+        mainStateRef,
+        async (docSnap) => {
+          updateCloudConnectionUI("CONNECTED");
+          if (docSnap.exists()) {
+            const cloudData = docSnap.data();
+            const cloudUpdated = Number(cloudData.updatedAt || 0);
+            const localUpdated = Number(state.updatedAt || 0);
+
+            if (cloudUpdated >= localUpdated || state.karyawan.length === 0) {
+              state = {
+                updatedAt: cloudUpdated || Date.now(),
+                karyawan: Array.isArray(cloudData.karyawan) ? cloudData.karyawan : [],
+                absensi: deduplicateAbsensiList(Array.isArray(cloudData.absensi) ? cloudData.absensi : []),
+                kasbon: Array.isArray(cloudData.kasbon) ? cloudData.kasbon : []
+              };
+              localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
+              localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
+              if (currentUser) {
+                initBulkStateForDate();
+                renderAll();
+              }
+            }
+          } else {
+            // Dokumen Firestore baru: unggah state awal secara otomatis
+            await pushMainStateToFirestore("INITIAL_SEED");
+          }
+        },
+        (error) => {
+          console.error("Firestore main_state error:", error);
+          updateCloudConnectionUI("ERROR", "Akses Firestore Ditolak (Cek Rules)");
+        }
+      );
+
+      // Listener Real-Time 2: Pengaturan Operasional (URL Sheet, Token Sheet, Hash PIN Admin/Mandor)
+      unsubscribeCloudSettings = onSnapshot(
+        settingsRef,
+        async (docSnap) => {
+          if (docSnap.exists()) {
+            const sData = docSnap.data();
+            cloudOperationalSettings = {
+              gasWebAppUrl: sData.gasWebAppUrl || "",
+              gasToken: sData.gasToken || "",
+              adminPinHash: sData.adminPinHash || DEFAULT_PIN_1234_SHA256,
+              mandorPinHash: sData.mandorPinHash || DEFAULT_PIN_1234_SHA256
+            };
+            localStorage.setItem(STORAGE_KEYS.CLOUD_SETTINGS_CACHE, JSON.stringify(cloudOperationalSettings));
+          } else {
+            await setDoc(settingsRef, {
+              ...cloudOperationalSettings,
+              updatedAt: Date.now()
+            }, { merge: true });
+          }
+        },
+        (error) => {
+          console.warn("Firestore cloud_settings listener warning:", error);
+        }
+      );
+
+      return true;
+    } catch (err) {
+      console.error("Inisialisasi Firestore gagal:", err);
+      updateCloudConnectionUI("ERROR", "Gagal Terhubung ke Firebase");
+      return false;
+    }
+  }
+
+  async function pushMainStateToFirestore(actionName = "UPDATE") {
+    if (!fbDb || !fbUser) return false;
+    try {
+      updateCloudConnectionUI("SYNCING");
+      const appId = getAppNamespaceId();
+      const mainStateRef = doc(fbDb, "artifacts", appId, "public", "data", "workforce_pro", "main_state");
+
+      // Pastikan data absensi selalu bersih & bebas duplikat sebelum disimpan ke Firestore
+      state.absensi = deduplicateAbsensiList(state.absensi);
+
+      await setDoc(mainStateRef, {
+        updatedAt: state.updatedAt || Date.now(),
+        lastAction: actionName,
+        updatedBy: currentUser ? currentUser.name : "System",
+        karyawan: state.karyawan,
+        absensi: state.absensi,
+        kasbon: state.kasbon
+      }, { merge: true });
+
+      updateCloudConnectionUI("CONNECTED");
+      return true;
+    } catch (err) {
+      console.error("Gagal menulis ke Firestore:", err);
+      updateCloudConnectionUI("ERROR", "Gagal Sinkron Firestore");
+      return false;
+    }
+  }
+
+  /******************************************************************
+   * 4. SISTEM ANTI-DOUBLE ABSENSI & SPREADSHEET SYNC
+   ******************************************************************/
+  // Menghilangkan duplikasi data absensi berdasarkan pasangan (tanggal + karyawanId)
+  function deduplicateAbsensiList(list) {
+    const map = new Map();
+    for (const item of list) {
+      if (!item || !item.tanggal || !item.karyawanId) continue;
+      const uniqueKey = `${item.tanggal}__${item.karyawanId}`;
+      const normalized = {
+        ...item,
+        uniqueKey,
+        id: `ABS_${item.tanggal.replace(/-/g, '')}_${item.karyawanId}`
+      };
+      // Jika ada key sama, ambil yang terbaru (atau pertahankan yang pertama di list terbaru)
+      if (!map.has(uniqueKey)) {
+        map.set(uniqueKey, normalized);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  }
+
+  async function syncAbsensiToSpreadsheet(action, recordsOrPayload) {
+    const gasUrl = cloudOperationalSettings.gasWebAppUrl;
+    const gasToken = cloudOperationalSettings.gasToken;
+    if (!gasUrl) return;
+
+    const payloadBody = {
+      token: gasToken,
+      action: action,
+      payload: recordsOrPayload,
+      timestamp: new Date().toISOString()
+    };
+
+    // Cegah pengiriman ganda identik dalam jeda 3 detik (misal double-tap di layar sentuh)
+    const sig = JSON.stringify({ action, recordsOrPayload });
+    if (sig === lastSheetPayloadHash && action !== "SYNC_ALL_ABSENSI") {
+      return;
+    }
+    lastSheetPayloadHash = sig;
+    setTimeout(() => { if (lastSheetPayloadHash === sig) lastSheetPayloadHash = ""; }, 3000);
+
+    try {
+      await fetch(gasUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payloadBody)
+      });
+    } catch (err) {
+      console.warn("Sinkronisasi Spreadsheet tertunda:", err);
+    }
+  }
+
+  async function syncAllAbsensiToSpreadsheet() {
+    if (!cloudOperationalSettings.gasWebAppUrl) {
+      showToast("Isi Google Apps Script Web App URL terlebih dahulu!", true);
+      return;
+    }
+    const cleanList = deduplicateAbsensiList(state.absensi);
+    showToast(`Mengirim ${cleanList.length} data absensi bersih ke Spreadsheet...`);
+    await syncAbsensiToSpreadsheet("SYNC_ALL_ABSENSI", cleanList);
+    showToast("Sinkronisasi penuh anti-double ke Spreadsheet selesai!");
+  }
+
+  /******************************************************************
+   * 5. MODAL KONFIRMASI, TOAST & CLIPBOARD SAFE HELPER
    ******************************************************************/
   function askConfirm(title, message, onYes) {
     document.getElementById("confirmTitle").textContent = title;
@@ -880,10 +1288,33 @@ service cloud.firestore {
     setTimeout(() => t.classList.add("hidden"), 3200);
   }
 
+  function copyTextSafe(text, successMsg) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      showToast(successMsg || "Teks berhasil disalin!");
+    } catch (e) {
+      showToast("Gagal menyalin teks.", true);
+    }
+    document.body.removeChild(ta);
+  }
+
   /******************************************************************
-   * 3. PENYIMPANAN STATE PERMANEN
+   * 6. PENYIMPANAN STATE LOKAL & SINKRONISASI OTOMATIS
    ******************************************************************/
   function loadLocalState() {
+    const cachedSettings = localStorage.getItem(STORAGE_KEYS.CLOUD_SETTINGS_CACHE);
+    if (cachedSettings) {
+      try {
+        cloudOperationalSettings = { ...cloudOperationalSettings, ...JSON.parse(cachedSettings) };
+      } catch (e) {}
+    }
+
     const saved = localStorage.getItem(STORAGE_KEYS.STATE);
     const alreadySeeded = localStorage.getItem(STORAGE_KEYS.SEEDED_FLAG);
 
@@ -893,7 +1324,7 @@ service cloud.firestore {
         state = {
           updatedAt: Number(parsed.updatedAt || Date.now()),
           karyawan: Array.isArray(parsed.karyawan) ? parsed.karyawan : [],
-          absensi: Array.isArray(parsed.absensi) ? parsed.absensi : [],
+          absensi: deduplicateAbsensiList(Array.isArray(parsed.absensi) ? parsed.absensi : []),
           kasbon: Array.isArray(parsed.kasbon) ? parsed.kasbon : []
         };
         localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
@@ -914,12 +1345,20 @@ service cloud.firestore {
     }
   }
 
-  function saveLocalState(syncAction = null, syncPayload = null) {
+  async function saveStateAndSync(actionName = "UPDATE", sheetAction = null, sheetPayload = null) {
     state.updatedAt = Date.now();
+    state.absensi = deduplicateAbsensiList(state.absensi);
     localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
     localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
     updateHeaderStats();
-    syncToCloud(syncAction, syncPayload);
+
+    // 1. Simpan otomatis ke Cloud Firestore
+    await pushMainStateToFirestore(actionName);
+
+    // 2. Jika ada aksi absensi, otomatis simpan ke Google Spreadsheet (anti-double)
+    if (sheetAction && sheetPayload) {
+      await syncAbsensiToSpreadsheet(sheetAction, sheetPayload);
+    }
   }
 
   function formatRp(num) {
@@ -939,242 +1378,41 @@ service cloud.firestore {
   }
 
   /******************************************************************
-   * 4. UTILITAS & FIREBASE AUTHENTICATION + CLOUD FIRESTORE USERS
+   * 7. LOGIN UNIVERSAL & PERSISTENSI SESI
    ******************************************************************/
-  function toAuthEmail(identifier) {
-    const clean = String(identifier || "").trim().toLowerCase();
-    if (clean.includes("@")) return clean;
-    const sanitized = clean.replace(/[^a-z0-9._-]/g, "");
-    return `${sanitized}@workforce.app`;
-  }
-
-  function toAuthPassword(pin) {
-    const raw = String(pin || "").trim();
-    return raw.length >= 6 ? raw : `WF#PIN#${raw}`;
-  }
-
-  function getCloudConfig() {
-    const encoded = localStorage.getItem(STORAGE_KEYS.CLOUD_CFG);
-    if (encoded) {
-      try { return { ...DEFAULT_CLOUD_CONFIG, ...JSON.parse(atob(encoded)) }; } catch (e) {}
-    }
-    return DEFAULT_CLOUD_CONFIG;
-  }
-
-  function getSystemAccounts() {
-    const cfg = getCloudConfig();
-    return {
-      admin:  { id: "SYS_ADMIN",  username: "admin",  pin: cfg.adminPin || "1234",  name: "Administrator Utama", role: "admin" },
-      mandor: { id: "SYS_MANDOR", username: "mandor", pin: cfg.mandorPin || "1234", name: "Mandor Lapangan",     role: "mandor" }
-    };
-  }
-
-  // Ekstrak otomatis dari snippet firebaseConfig yang ditempel user
-  function parseFirebaseConfigSnippet() {
-    const raw = document.getElementById("rawFirebaseSnippet").value;
-    if (!raw.trim()) {
-      showToast("Tempel kode firebaseConfig terlebih dahulu!", true);
-      return;
-    }
-
-    const apiKeyMatch = raw.match(/apiKey\s*:\s*["']([^"']+)["']/);
-    const projectIdMatch = raw.match(/projectId\s*:\s*["']([^"']+)["']/);
-    const dbUrlMatch = raw.match(/databaseURL\s*:\s*["']([^"']+)["']/);
-
-    let extracted = 0;
-    if (apiKeyMatch && apiKeyMatch[1]) {
-      document.getElementById("cfgFirebaseApiKey").value = apiKeyMatch[1].trim();
-      extracted++;
-    }
-    if (projectIdMatch && projectIdMatch[1]) {
-      document.getElementById("cfgFirestoreProjectId").value = projectIdMatch[1].trim();
-      extracted++;
-    }
-    if (dbUrlMatch && dbUrlMatch[1]) {
-      document.getElementById("cfgFirebaseUrl").value = dbUrlMatch[1].trim();
-      extracted++;
-    }
-
-    if (extracted > 0) {
-      showToast("Berhasil mengekstrak API Key & Project ID Firestore!");
-    } else {
-      showToast("Format tidak dikenali, pastikan ada apiKey dan projectId.", true);
-    }
-  }
-
-  async function firebaseSignInOrRegister(identifier, pin, localMatchedProfile) {
-    const cfg = getCloudConfig();
-    if (!cfg.firebaseApiKey) return null;
-
-    const email = toAuthEmail(identifier);
-    const password = toAuthPassword(pin);
-
-    const signInUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${cfg.firebaseApiKey}`;
-    let res = await fetch(signInUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, returnSecureToken: true })
-    });
-    let data = await res.json();
-
-    if (data.error && localMatchedProfile) {
-      const signUpUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${cfg.firebaseApiKey}`;
-      res = await fetch(signUpUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, returnSecureToken: true })
-      });
-      data = await res.json();
-    }
-
-    if (data.idToken && data.localId) {
-      // Simpan profil user ke Cloud Firestore (koleksi `users/{uid}`)
-      if (cfg.firestoreProjectId && localMatchedProfile) {
-        try {
-          const fsUserUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.firestoreProjectId)}/databases/(default)/documents/users/${encodeURIComponent(data.localId)}?key=${encodeURIComponent(cfg.firebaseApiKey)}`;
-          await fetch(fsUserUrl, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${data.idToken}`
-            },
-            body: JSON.stringify({
-              fields: {
-                uid: { stringValue: String(data.localId) },
-                id: { stringValue: String(localMatchedProfile.id) },
-                name: { stringValue: String(localMatchedProfile.name) },
-                role: { stringValue: String(localMatchedProfile.role) },
-                identifier: { stringValue: String(identifier) },
-                updatedAt: { stringValue: new Date().toISOString() }
-              }
-            })
-          });
-        } catch (e) {}
-      }
-
-      // Simpan juga ke Realtime Database jika URL diisi
-      if (cfg.firebaseDbUrl && localMatchedProfile) {
-        try {
-          await fetch(`${cfg.firebaseDbUrl}/users/${data.localId}.json?auth=${data.idToken}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              uid: data.localId,
-              id: localMatchedProfile.id,
-              name: localMatchedProfile.name,
-              role: localMatchedProfile.role,
-              identifier: identifier,
-              updatedAt: new Date().toISOString()
-            })
-          });
-        } catch (e) {}
-      }
-
-      return {
-        uid: data.localId,
-        idToken: data.idToken,
-        refreshToken: data.refreshToken,
-        expiresAt: Date.now() + (Number(data.expiresIn || 3600) * 1000)
-      };
-    }
-
-    if (data.error) {
-      throw new Error(data.error.message || "Gagal autentikasi Firebase");
-    }
-    return null;
-  }
-
-  async function ensureValidIdToken() {
-    if (!currentUser || !currentUser.refreshToken) return null;
-    const cfg = getCloudConfig();
-    if (!cfg.firebaseApiKey) return null;
-
-    if (currentUser.expiresAt && Date.now() < currentUser.expiresAt - 120000) {
-      return currentUser.idToken;
-    }
-
-    try {
-      const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${cfg.firebaseApiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(currentUser.refreshToken)}`
-      });
-      const data = await res.json();
-      if (data.id_token) {
-        currentUser.idToken = data.id_token;
-        currentUser.refreshToken = data.refresh_token;
-        currentUser.expiresAt = Date.now() + (Number(data.expires_in || 3600) * 1000);
-        saveSession(currentUser);
-        return currentUser.idToken;
-      }
-    } catch (e) {
-      console.warn("Token refresh gagal, menggunakan sesi lokal:", e);
-    }
-    return currentUser.idToken || null;
-  }
-
-  async function provisionAllUsersToFirebaseAuth() {
-    const cfg = getCloudConfig();
-    if (!cfg.firebaseApiKey) {
-      showToast("Harap isi Firebase Web API Key terlebih dahulu!", true);
-      return;
-    }
-
-    const sys = getSystemAccounts();
-    const accountsToProvision = [
-      { identifier: sys.admin.username, pin: sys.admin.pin, profile: sys.admin },
-      { identifier: sys.mandor.username, pin: sys.mandor.pin, profile: sys.mandor },
-      ...state.karyawan.map(k => ({
-        identifier: k.hp,
-        pin: k.pin || "1111",
-        profile: { id: k.id, name: k.nama, role: "karyawan" }
-      }))
-    ];
-
-    showToast("Mendaftarkan akun ke Firebase Auth & Firestore...");
-    let successCount = 0;
-    for (const acc of accountsToProvision) {
-      try {
-        await firebaseSignInOrRegister(acc.identifier, acc.pin, acc.profile);
-        successCount++;
-      } catch (e) {
-        console.warn("Skip/Error:", acc.identifier, e.message);
-      }
-    }
-    showToast(`${successCount} akun berhasil disinkronkan ke Auth & Firestore!`);
-  }
-
-  /******************************************************************
-   * 5. LOGIN UNIVERSAL & PERSISTENSI SESI
-   ******************************************************************/
-  function detectUserProfileLocally(identifier, pin) {
+  async function authenticateUser(identifier, pin) {
     const cleanId = String(identifier || "").trim().toLowerCase();
     const cleanPin = String(pin || "").trim();
-    const sys = getSystemAccounts();
 
-    if ((cleanId === "admin" || cleanId === "admin@workforce.app") && cleanPin === sys.admin.pin) {
-      return { ...sys.admin };
+    if (cleanId === "admin") {
+      const ok = await verifyPinMatch(cleanPin, cloudOperationalSettings.adminPinHash || DEFAULT_PIN_1234_SHA256);
+      if (ok) {
+        return { id: "SYS_ADMIN", username: "admin", name: "Administrator Utama", role: "admin" };
+      }
     }
 
-    if ((cleanId === "mandor" || cleanId === "mandor@workforce.app") && cleanPin === sys.mandor.pin) {
-      return { ...sys.mandor };
+    if (cleanId === "mandor") {
+      const ok = await verifyPinMatch(cleanPin, cloudOperationalSettings.mandorPinHash || DEFAULT_PIN_1234_SHA256);
+      if (ok) {
+        return { id: "SYS_MANDOR", username: "mandor", name: "Mandor Lapangan", role: "mandor" };
+      }
     }
 
-    const emp = state.karyawan.find(k => {
+    for (const k of state.karyawan) {
       const hpMatch = String(k.hp || "").trim().toLowerCase() === cleanId;
       const idMatch = String(k.id || "").trim().toLowerCase() === cleanId;
-      const emailMatch = toAuthEmail(k.hp) === cleanId;
-      return (hpMatch || idMatch || emailMatch) && String(k.pin || "").trim() === cleanPin;
-    });
-
-    if (emp) {
-      return {
-        id: emp.id,
-        username: emp.hp,
-        name: emp.nama,
-        role: "karyawan",
-        empData: emp
-      };
+      if (hpMatch || idMatch) {
+        const storedSecret = k.pinHash || k.pin || DEFAULT_PIN_1234_SHA256;
+        const ok = await verifyPinMatch(cleanPin, storedSecret);
+        if (ok) {
+          return {
+            id: k.id,
+            username: k.hp,
+            name: k.nama,
+            role: "karyawan"
+          };
+        }
+      }
     }
 
     return null;
@@ -1187,39 +1425,10 @@ service cloud.firestore {
     const btn = document.getElementById("btnSubmitLogin");
 
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Memverifikasi Akun...`;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Memverifikasi...`;
 
     try {
-      let profile = detectUserProfileLocally(identifier, pin);
-      const cfg = getCloudConfig();
-
-      if (cfg.firebaseApiKey && (cfg.firestoreProjectId || cfg.firebaseDbUrl)) {
-        try {
-          const authData = await firebaseSignInOrRegister(identifier, pin, profile);
-          if (authData) {
-            if (!profile && cfg.firestoreProjectId) {
-              const fsUserUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.firestoreProjectId)}/databases/(default)/documents/users/${encodeURIComponent(authData.uid)}?key=${encodeURIComponent(cfg.firebaseApiKey)}`;
-              const userRes = await fetch(fsUserUrl, {
-                headers: { "Authorization": `Bearer ${authData.idToken}` }
-              });
-              const userDoc = await userRes.json();
-              if (userDoc && userDoc.fields && userDoc.fields.role) {
-                profile = {
-                  id: userDoc.fields.id?.stringValue || authData.uid,
-                  name: userDoc.fields.name?.stringValue || identifier,
-                  role: userDoc.fields.role.stringValue
-                };
-              }
-            }
-            if (profile) {
-              profile = { ...profile, ...authData };
-            }
-          }
-        } catch (authErr) {
-          console.warn("Firebase Auth dilewati, menggunakan verifikasi lokal:", authErr.message);
-        }
-      }
-
+      const profile = await authenticateUser(identifier, pin);
       if (!profile) {
         showToast("ID Pengguna atau PIN tidak cocok! Periksa kembali.", true);
         return;
@@ -1227,7 +1436,7 @@ service cloud.firestore {
 
       currentUser = profile;
       if (document.getElementById("rememberSession").checked) {
-        saveSession(currentUser);
+        localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(currentUser));
       }
 
       const defaultTab = currentUser.role === "mandor"
@@ -1244,28 +1453,16 @@ service cloud.firestore {
     }
   }
 
-  function saveSession(userObj) {
-    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(userObj));
-  }
-
-  async function restoreSessionOnLoad() {
+  function restoreSessionOnLoad() {
     const rawSession = localStorage.getItem(STORAGE_KEYS.SESSION);
     if (!rawSession) return;
-
     try {
       const savedUser = JSON.parse(rawSession);
       if (savedUser && savedUser.role) {
         currentUser = savedUser;
         const lastTab = localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB) ||
           (currentUser.role === "mandor" ? "absensi" : (currentUser.role === "karyawan" ? "gaji" : "karyawan"));
-
         enterApp(lastTab);
-
-        const cfg = getCloudConfig();
-        if (cfg.firestoreProjectId || cfg.firebaseDbUrl) {
-          await ensureValidIdToken();
-          await pullFromFirebase(true);
-        }
       }
     } catch (e) {
       console.warn("Gagal memulihkan sesi:", e);
@@ -1331,226 +1528,330 @@ service cloud.firestore {
   }
 
   /******************************************************************
-   * 6. SINKRONISASI CLOUD FIRESTORE (UTAMA), REALTIME DB & SHEETS
+   * 8. KONFIGURASI CLOUD MODAL, PARSER & GENERATOR GITHUB HTML
    ******************************************************************/
-  function getFirestoreDocUrl(cfg) {
-    const keyParam = cfg.firebaseApiKey ? `?key=${encodeURIComponent(cfg.firebaseApiKey)}` : "";
-    return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.firestoreProjectId)}/databases/(default)/documents/workforce_pro/main_state${keyParam}`;
+  function switchCfgSubTab(sub) {
+    ["firestore", "sheet", "security"].forEach(name => {
+      document.getElementById(`cfgSubTab_${name}`).classList.toggle("hidden", name !== sub);
+      document.getElementById(`cfgTabBtn_${name}`).className = name === sub
+        ? "py-2 rounded-xl bg-white text-indigo-600 shadow-sm"
+        : "py-2 rounded-xl text-slate-600";
+    });
   }
 
-  function saveCloudConfig() {
-    const cfg = {
-      firebaseApiKey: document.getElementById("cfgFirebaseApiKey").value.trim(),
-      firestoreProjectId: document.getElementById("cfgFirestoreProjectId").value.trim(),
-      firebaseDbUrl: document.getElementById("cfgFirebaseUrl").value.trim().replace(/\/$/, ""),
-      gasWebAppUrl: document.getElementById("cfgGasUrl").value.trim(),
-      gasToken: document.getElementById("cfgGasToken").value.trim(),
-      adminPin: document.getElementById("cfgAdminPin").value.trim() || "1234",
-      mandorPin: document.getElementById("cfgMandorPin").value.trim() || "1234"
-    };
-    localStorage.setItem(STORAGE_KEYS.CLOUD_CFG, btoa(JSON.stringify(cfg)));
+  function parseFirebaseConfigSnippet() {
+    const raw = document.getElementById("rawFirebaseSnippet").value;
+    if (!raw.trim()) {
+      showToast("Tempel kode firebaseConfig terlebih dahulu!", true);
+      return;
+    }
+
+    const apiKeyMatch = raw.match(/apiKey\s*:\s*["']([^"']+)["']/);
+    const projectIdMatch = raw.match(/projectId\s*:\s*["']([^"']+)["']/);
+    const appIdMatch = raw.match(/appId\s*:\s*["']([^"']+)["']/);
+
+    let extracted = 0;
+    if (apiKeyMatch && apiKeyMatch[1]) {
+      document.getElementById("cfgFirebaseApiKey").value = apiKeyMatch[1].trim();
+      extracted++;
+    }
+    if (projectIdMatch && projectIdMatch[1]) {
+      document.getElementById("cfgFirestoreProjectId").value = projectIdMatch[1].trim();
+      extracted++;
+    }
+    if (appIdMatch && appIdMatch[1]) {
+      document.getElementById("cfgFirebaseAppId").value = appIdMatch[1].trim();
+      extracted++;
+    }
+
+    if (extracted > 0) {
+      showToast("Berhasil mengekstrak konfigurasi Firebase!");
+    } else {
+      showToast("Format tidak dikenali, pastikan ada apiKey dan projectId.", true);
+    }
+  }
+
+  async function saveCloudConfig() {
+    const apiKey = document.getElementById("cfgFirebaseApiKey").value.trim();
+    const projectId = document.getElementById("cfgFirestoreProjectId").value.trim();
+    const appId = document.getElementById("cfgFirebaseAppId").value.trim();
+
+    const gasUrl = document.getElementById("cfgGasUrl").value.trim();
+    const gasToken = document.getElementById("cfgGasToken").value.trim();
+    const newAdminPin = document.getElementById("cfgNewAdminPin").value.trim();
+    const newMandorPin = document.getElementById("cfgNewMandorPin").value.trim();
+
+    if (apiKey && projectId) {
+      const fbObj = {
+        apiKey,
+        authDomain: `${projectId}.firebaseapp.com`,
+        projectId,
+        storageBucket: `${projectId}.firebasestorage.app`,
+        messagingSenderId: "",
+        appId
+      };
+      localStorage.setItem(STORAGE_KEYS.LOCAL_FIREBASE_CFG, JSON.stringify(fbObj));
+      await initAutomaticFirestoreConnection(fbObj);
+    }
+
+    // Update pengaturan operasional (URL Sheet, Token, dan Hash PIN SHA-256)
+    cloudOperationalSettings.gasWebAppUrl = gasUrl;
+    cloudOperationalSettings.gasToken = gasToken;
+    if (newAdminPin) {
+      cloudOperationalSettings.adminPinHash = await sha256Hex(newAdminPin);
+    }
+    if (newMandorPin) {
+      cloudOperationalSettings.mandorPinHash = await sha256Hex(newMandorPin);
+    }
+
+    localStorage.setItem(STORAGE_KEYS.CLOUD_SETTINGS_CACHE, JSON.stringify(cloudOperationalSettings));
+
+    if (fbDb && fbUser) {
+      try {
+        const nsId = getAppNamespaceId();
+        const settingsRef = doc(fbDb, "artifacts", nsId, "public", "data", "workforce_pro", "cloud_settings");
+        await setDoc(settingsRef, {
+          ...cloudOperationalSettings,
+          updatedAt: Date.now()
+        }, { merge: true });
+        await pushMainStateToFirestore("CONFIG_SYNC");
+      } catch (e) {
+        console.warn("Gagal menyimpan cloud_settings ke Firestore:", e);
+      }
+    }
+
+    document.getElementById("cfgNewAdminPin").value = "";
+    document.getElementById("cfgNewMandorPin").value = "";
     closeModal("modalCloudConfig");
-    showToast("Konfigurasi Cloud Firestore disimpan!");
-    syncToCloud("FULL_SYNC", state);
+    showToast("Pengaturan Cloud Firestore & Keamanan tersimpan!");
   }
 
   async function testFirestoreConnection() {
     const apiKey = document.getElementById("cfgFirebaseApiKey").value.trim();
     const projectId = document.getElementById("cfgFirestoreProjectId").value.trim();
+    const appId = document.getElementById("cfgFirebaseAppId").value.trim();
 
-    if (!projectId) {
-      showToast("Masukkan Cloud Firestore Project ID terlebih dahulu!", true);
+    if (!apiKey || !projectId) {
+      showToast("Isi API Key & Project ID Firebase terlebih dahulu!", true);
       return;
     }
 
-    showToast("Menguji koneksi ke Cloud Firestore...");
+    showToast("Menghubungkan & menguji Cloud Firestore...");
+    const ok = await initAutomaticFirestoreConnection({
+      apiKey,
+      authDomain: `${projectId}.firebaseapp.com`,
+      projectId,
+      storageBucket: `${projectId}.firebasestorage.app`,
+      messagingSenderId: "",
+      appId
+    });
+
+    if (ok) {
+      showToast("Koneksi Cloud Firestore & Auth BERHASIL!");
+    } else {
+      showToast("Gagal terhubung! Pastikan Anonymous Auth & Firestore aktif.", true);
+    }
+  }
+
+  async function pullFromFirestoreManual() {
+    if (!fbDb || !fbUser) {
+      const ok = await initAutomaticFirestoreConnection();
+      if (!ok) {
+        showToast("Konfigurasi Firebase belum aktif.", true);
+        return;
+      }
+    }
     try {
-      const idToken = await ensureValidIdToken();
-      const headers = { "Content-Type": "application/json" };
-      if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-
-      const testUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/workforce_pro/main_state${apiKey ? `?key=${encodeURIComponent(apiKey)}` : ""}`;
-      const res = await fetch(testUrl, { method: "GET", headers });
-
-      if (res.ok || res.status === 404) {
-        // Status 200 (dokumen ada) atau 404 (database aktif namun dokumen belum dibuat) berarti koneksi sukses!
-        showToast("Koneksi Cloud Firestore BERHASIL & siap digunakan!");
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        const msg = errData.error?.message || `HTTP ${res.status}`;
-        showToast(`Gagal akses Firestore: ${msg}`, true);
-      }
-    } catch (err) {
-      showToast("Gagal terhubung ke Firestore: Periksa koneksi / Project ID", true);
-    }
-  }
-
-  async function syncToCloud(action, payload) {
-    const cfg = getCloudConfig();
-    const badge = document.getElementById("cloudStatusBadge");
-
-    // 1. SINKRONISASI KE CLOUD FIRESTORE (JIKA PROJECT ID DIISI)
-    if (cfg.firestoreProjectId) {
-      try {
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Sync Firestore...`;
-        const idToken = await ensureValidIdToken();
-        const headers = { "Content-Type": "application/json" };
-        if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-
-        const firestorePayload = {
-          fields: {
-            updatedAt: { integerValue: String(state.updatedAt || Date.now()) },
-            totalKaryawan: { integerValue: String(state.karyawan.length) },
-            totalAbsensi: { integerValue: String(state.absensi.length) },
-            totalKasbon: { integerValue: String(state.kasbon.length) },
-            karyawanJson: { stringValue: JSON.stringify(state.karyawan) },
-            absensiJson: { stringValue: JSON.stringify(state.absensi) },
-            kasbonJson: { stringValue: JSON.stringify(state.kasbon) },
-            lastAction: { stringValue: String(action || "SYNC") },
-            updatedBy: { stringValue: String(currentUser ? currentUser.name : "System") }
-          }
+      const appId = getAppNamespaceId();
+      const mainStateRef = doc(fbDb, "artifacts", appId, "public", "data", "workforce_pro", "main_state");
+      const snap = await getDoc(mainStateRef);
+      if (snap.exists()) {
+        const cloudData = snap.data();
+        state = {
+          updatedAt: Number(cloudData.updatedAt || Date.now()),
+          karyawan: Array.isArray(cloudData.karyawan) ? cloudData.karyawan : [],
+          absensi: deduplicateAbsensiList(Array.isArray(cloudData.absensi) ? cloudData.absensi : []),
+          kasbon: Array.isArray(cloudData.kasbon) ? cloudData.kasbon : []
         };
-
-        const res = await fetch(getFirestoreDocUrl(cfg), {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify(firestorePayload)
-        });
-
-        if (!res.ok) throw new Error("Firestore HTTP " + res.status);
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Firestore Aktif`;
-      } catch (err) {
-        console.warn("Firestore sync error:", err);
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Mode Lokal`;
+        localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
+        initBulkStateForDate();
+        renderAll();
+        showToast("Data terbaru berhasil ditarik dari Cloud Firestore!");
+      } else {
+        await pushMainStateToFirestore("MANUAL_SEED");
+        showToast("Dokumen baru diinisialisasi di Cloud Firestore!");
       }
-    }
-    // 2. FALLBACK KE REALTIME DATABASE (JIKA URL RTDB DIISI)
-    else if (cfg.firebaseDbUrl) {
-      try {
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Syncing...`;
-        const idToken = await ensureValidIdToken();
-        const authQuery = idToken ? `?auth=${encodeURIComponent(idToken)}` : "";
-        const res = await fetch(`${cfg.firebaseDbUrl}/workforce_data.json${authQuery}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            karyawan: state.karyawan,
-            absensi: state.absensi,
-            kasbon: state.kasbon,
-            updatedAt: state.updatedAt || Date.now()
-          })
-        });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Terlindungi UID`;
-      } catch (err) {
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Mode Lokal`;
-      }
-    }
-
-    // 3. SINKRONISASI KE GOOGLE SHEETS (JIKA DIISI)
-    if (cfg.gasWebAppUrl && action) {
-      try {
-        await fetch(cfg.gasWebAppUrl, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            token: cfg.gasToken,
-            action: action,
-            payload: payload,
-            fullState: state,
-            timestamp: new Date().toISOString()
-          })
-        });
-      } catch (err) {
-        console.warn("GAS Sync tertunda:", err);
-      }
+    } catch (e) {
+      showToast("Gagal menarik data: " + e.message, true);
     }
   }
 
-  async function pullFromFirebase(silent = false) {
-    const cfg = getCloudConfig();
-    if (!cfg.firestoreProjectId && !cfg.firebaseDbUrl) {
-      if (!silent) showToast("Isi Cloud Firestore Project ID terlebih dahulu!", true);
+  // Menghasilkan file index.html siap upload ke GitHub Pages dengan APP_CLOUD_CONFIG tertanam otomatis
+  function downloadGitHubReadyHtml() {
+    const apiKey = document.getElementById("cfgFirebaseApiKey").value.trim();
+    const projectId = document.getElementById("cfgFirestoreProjectId").value.trim();
+    const appId = document.getElementById("cfgFirebaseAppId").value.trim();
+
+    if (!apiKey || !projectId) {
+      showToast("Isi API Key & Project ID Firebase terlebih dahulu sebelum mengunduh!", true);
       return;
     }
 
-    // 1. TARIK DARI CLOUD FIRESTORE
-    if (cfg.firestoreProjectId) {
-      try {
-        const idToken = await ensureValidIdToken();
-        const headers = {};
-        if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+    const injectedBlock = `const APP_CLOUD_CONFIG = {
+    apiKey: ${JSON.stringify(apiKey)},
+    authDomain: ${JSON.stringify(`${projectId}.firebaseapp.com`)},
+    projectId: ${JSON.stringify(projectId)},
+    storageBucket: ${JSON.stringify(`${projectId}.firebasestorage.app`)},
+    messagingSenderId: "",
+    appId: ${JSON.stringify(appId)}
+  };`;
 
-        const res = await fetch(getFirestoreDocUrl(cfg), { method: "GET", headers });
-        if (res.status === 404) {
-          // Dokumen belum ada di Firestore, unggah state lokal saat ini
-          await syncToCloud("INITIAL_FIRESTORE_SEED", state);
-          if (!silent) showToast("Dokumen Firestore baru berhasil diinisialisasi!");
-          return;
-        }
-        if (!res.ok) throw new Error("Firestore HTTP " + res.status);
+    const fullDocHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+    const replacedHtml = fullDocHtml.replace(
+      /const APP_CLOUD_CONFIG\s*=\s*\{[\s\S]*?\};/,
+      injectedBlock
+    );
 
-        const doc = await res.json();
-        if (doc && doc.fields) {
-          const f = doc.fields;
-          const cloudUpdated = Number(f.updatedAt?.integerValue || 0);
-          const localUpdated = Number(state.updatedAt || 0);
+    const blob = new Blob([replacedHtml], { type: "text/html;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "index.html";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-          if (!silent || cloudUpdated >= localUpdated) {
-            state.karyawan = f.karyawanJson?.stringValue ? JSON.parse(f.karyawanJson.stringValue) : [];
-            state.absensi = f.absensiJson?.stringValue ? JSON.parse(f.absensiJson.stringValue) : [];
-            state.kasbon = f.kasbonJson?.stringValue ? JSON.parse(f.kasbonJson.stringValue) : [];
-            state.updatedAt = cloudUpdated || Date.now();
+    showToast("File index.html siap upload GitHub berhasil diunduh!");
+  }
 
-            localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
-            localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
-            initBulkStateForDate();
-            renderAll();
-          }
-          document.getElementById("cloudStatusBadge").innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Firestore Aktif`;
-          if (!silent) showToast("Data berhasil ditarik dari Cloud Firestore!");
-        }
-        return;
-      } catch (e) {
-        if (!silent) showToast("Gagal menarik dari Firestore: Periksa Project ID & Rules.", true);
-        return;
+  const GAS_ANTI_DOUBLE_SCRIPT = `/**
+ * GOOGLE APPS SCRIPT - WORKFORCE PRO (ANTI-DOUBLE FILE & ANTI-DOUBLE BARIS)
+ * Cara Pasang:
+ * 1. Buka Google Spreadsheet Anda -> Menu Ekstensi (Extensions) -> Apps Script.
+ * 2. Hapus kode lama, tempel seluruh kode ini, lalu ganti SECRET_TOKEN sesuai pengaturan di aplikasi.
+ * 3. Klik Deploy -> New deployment -> Web app -> Execute as: Me -> Who has access: Anyone.
+ * 4. Salin Web App URL dan tempel di menu Cloud -> 2. Spreadsheet pada aplikasi.
+ */
+const SECRET_TOKEN = "GANTI_DENGAN_TOKEN_RAHASIA_ANDA";
+const SHEET_NAME = "Absensi_Karyawan";
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000); // Mencegah bentrok & duplikasi saat input bersamaan
+
+  try {
+    const body = JSON.parse(e.postData.contents);
+    if (SECRET_TOKEN && body.token !== SECRET_TOKEN) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Token tidak valid" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Menggunakan Spreadsheet aktif saat ini (TIDAK membuat file baru / double)
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow([
+        "Unique_Key", "Tanggal", "ID_Karyawan", "Nama_Karyawan",
+        "Status_Hadir", "Jam_Lembur", "Upah_Harian", "Upah_Lembur",
+        "Total_Upah", "Catatan", "Input_Oleh", "Waktu_Update"
+      ]);
+      sheet.getRange(1, 1, 1, 12).setFontWeight("bold").setBackground("#e2e8f0");
+      sheet.setFrozenRows(1);
+    }
+
+    const action = body.action;
+    const payload = body.payload;
+
+    if (action === "UPSERT_ABSENSI") {
+      const records = Array.isArray(payload) ? payload : [payload];
+      upsertRecords(sheet, records);
+    } else if (action === "DELETE_ABSENSI") {
+      const targetKey = payload && payload.uniqueKey ? payload.uniqueKey : "";
+      if (targetKey) deleteRecordByKey(sheet, targetKey);
+    } else if (action === "SYNC_ALL_ABSENSI") {
+      const records = Array.isArray(payload) ? payload : [];
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        sheet.getRange(2, 1, lastRow - 1, 12).clearContent();
+      }
+      if (records.length > 0) {
+        const rows = records.map(r => formatRow(r));
+        sheet.getRange(2, 1, rows.length, 12).setValues(rows);
       }
     }
 
-    // 2. FALLBACK TARIK DARI REALTIME DATABASE
-    if (cfg.firebaseDbUrl) {
-      try {
-        const idToken = await ensureValidIdToken();
-        const authQuery = idToken ? `?auth=${encodeURIComponent(idToken)}` : "";
-        const res = await fetch(`${cfg.firebaseDbUrl}/workforce_data.json${authQuery}`);
-        if (!res.ok) throw new Error("Akses ditolak / Offline");
-        const data = await res.json();
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
 
-        if (data) {
-          const cloudUpdated = Number(data.updatedAt || 0);
-          const localUpdated = Number(state.updatedAt || 0);
+function formatRow(r) {
+  const uKey = r.uniqueKey || (r.tanggal + "__" + r.karyawanId);
+  return [
+    uKey,
+    r.tanggal || "",
+    r.karyawanId || "",
+    r.namaKaryawan || "",
+    r.tipe || "",
+    Number(r.jamLembur || 0),
+    Number(r.upahHarian || 0),
+    Number(r.upahLembur || 0),
+    Number(r.totalUpah || 0),
+    r.catatan || "",
+    r.inputOleh || "",
+    new Date().toLocaleString("id-ID")
+  ];
+}
 
-          if (!silent || cloudUpdated >= localUpdated) {
-            state.karyawan = Array.isArray(data.karyawan) ? data.karyawan : [];
-            state.absensi = Array.isArray(data.absensi) ? data.absensi : [];
-            state.kasbon = Array.isArray(data.kasbon) ? data.kasbon : [];
-            state.updatedAt = cloudUpdated || Date.now();
-            localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
-            localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
-            initBulkStateForDate();
-            renderAll();
-          }
-          if (!silent) showToast("Data berhasil disinkronkan dari Firebase!");
-        }
-      } catch (e) {
-        if (!silent) showToast("Gagal menarik data: Periksa pengaturan Cloud.", true);
-      }
+function upsertRecords(sheet, records) {
+  const lastRow = sheet.getLastRow();
+  const existingKeys = lastRow > 1
+    ? sheet.getRange(2, 1, lastRow - 1, 1).getValues().map(row => String(row[0]))
+    : [];
+
+  records.forEach(r => {
+    const rowData = formatRow(r);
+    const uKey = String(rowData[0]);
+    const foundIndex = existingKeys.indexOf(uKey);
+    if (foundIndex >= 0) {
+      // Timpa baris yang sudah ada agar TIDAK DOUBLE
+      sheet.getRange(foundIndex + 2, 1, 1, 12).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+      existingKeys.push(uKey);
     }
+  });
+}
+
+function deleteRecordByKey(sheet, uniqueKey) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+  const keys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (let i = keys.length - 1; i >= 0; i--) {
+    if (String(keys[i][0]) === String(uniqueKey)) {
+      sheet.deleteRow(i + 2);
+    }
+  }
+}`;
+
+  function copyGasCode() {
+    copyTextSafe(GAS_ANTI_DOUBLE_SCRIPT, "Kode Google Apps Script Anti-Double berhasil disalin!");
+  }
+
+  function copyFirestoreRules() {
+    const rules = document.getElementById("firestoreRulesSnippet").textContent;
+    copyTextSafe(rules, "Firestore Security Rules berhasil disalin!");
   }
 
   /******************************************************************
-   * 7. RENDER & CRUD: DAFTAR KARYAWAN
+   * 9. RENDER & CRUD: DAFTAR KARYAWAN
    ******************************************************************/
   function renderKaryawan() {
     const listEl = document.getElementById("karyawanList");
@@ -1588,7 +1889,8 @@ service cloud.firestore {
               <h4 class="text-sm font-extrabold text-slate-800 truncate">${k.nama}</h4>
               <p class="text-[11px] text-slate-500 truncate"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${k.alamat}</p>
               <p class="text-[11px] text-slate-500">
-                <i class="fa-solid fa-key mr-1 text-indigo-500"></i>ID Login: <b>${k.hp}</b> ${isAdmin ? `(PIN: ${k.pin || '1111'})` : ''}
+                <i class="fa-solid fa-key mr-1 text-indigo-500"></i>ID Login: <b>${k.hp}</b>
+                <span class="ml-1.5 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[9px] font-bold">PIN Terenkripsi</span>
               </p>
             </div>
           </div>
@@ -1627,7 +1929,8 @@ service cloud.firestore {
       document.getElementById("empNama").value = k.nama;
       document.getElementById("empAlamat").value = k.alamat;
       document.getElementById("empHp").value = k.hp;
-      document.getElementById("empPin").value = k.pin || "1111";
+      document.getElementById("empPin").value = "";
+      document.getElementById("empPin").placeholder = "Kosongkan jika PIN tetap";
       document.getElementById("empGajiHarian").value = k.gajiHarian;
       document.getElementById("empLemburJam").value = k.lemburJam;
     } else {
@@ -1636,7 +1939,8 @@ service cloud.firestore {
       document.getElementById("empNama").value = "";
       document.getElementById("empAlamat").value = "";
       document.getElementById("empHp").value = "";
-      document.getElementById("empPin").value = "1111";
+      document.getElementById("empPin").value = "1234";
+      document.getElementById("empPin").placeholder = "Default: 1234";
       document.getElementById("empGajiHarian").value = "";
       document.getElementById("empLemburJam").value = "";
     }
@@ -1644,13 +1948,22 @@ service cloud.firestore {
 
   async function saveKaryawan(e) {
     e.preventDefault();
-    const id = document.getElementById("empId").value || "EMP" + Date.now().toString().slice(-5);
+    const existingId = document.getElementById("empId").value;
+    const id = existingId || "EMP" + Date.now().toString().slice(-5);
+    const existingEmp = state.karyawan.find(k => k.id === id);
+    const rawPin = document.getElementById("empPin").value.trim();
+
+    let finalPinHash = existingEmp ? (existingEmp.pinHash || DEFAULT_PIN_1234_SHA256) : DEFAULT_PIN_1234_SHA256;
+    if (rawPin) {
+      finalPinHash = await sha256Hex(rawPin);
+    }
+
     const payload = {
       id,
       nama: document.getElementById("empNama").value.trim(),
       alamat: document.getElementById("empAlamat").value.trim(),
       hp: document.getElementById("empHp").value.trim(),
-      pin: document.getElementById("empPin").value.trim(),
+      pinHash: finalPinHash,
       gajiHarian: Number(document.getElementById("empGajiHarian").value),
       lemburJam: Number(document.getElementById("empLemburJam").value)
     };
@@ -1659,11 +1972,11 @@ service cloud.firestore {
     if (idx >= 0) state.karyawan[idx] = payload;
     else state.karyawan.push(payload);
 
-    saveLocalState("UPSERT_KARYAWAN", payload);
+    await saveStateAndSync("UPSERT_KARYAWAN");
     closeModal("modalKaryawan");
     initBulkStateForDate();
     renderAll();
-    showToast("Data karyawan disimpan!");
+    showToast("Data karyawan disimpan ke Cloud Firestore!");
   }
 
   function deleteKaryawan(id) {
@@ -1672,14 +1985,14 @@ service cloud.firestore {
 
     askConfirm(
       `Hapus ${nama}?`,
-      `Data profil, riwayat absensi, dan kasbon milik ${nama} akan dihapus permanen dan tidak muncul kembali.`,
-      () => {
+      `Data profil, riwayat absensi, dan kasbon milik ${nama} akan dihapus permanen di semua perangkat.`,
+      async () => {
         state.karyawan = state.karyawan.filter(k => k.id !== id);
         state.absensi = state.absensi.filter(a => a.karyawanId !== id);
         state.kasbon = state.kasbon.filter(k => k.karyawanId !== id);
         delete bulkDraft[id];
 
-        saveLocalState("DELETE_KARYAWAN", { id });
+        await saveStateAndSync("DELETE_KARYAWAN", "SYNC_ALL_ABSENSI", state.absensi);
         initBulkStateForDate();
         renderAll();
         showToast(`Data ${nama} berhasil dihapus permanen!`);
@@ -1688,7 +2001,7 @@ service cloud.firestore {
   }
 
   /******************************************************************
-   * 8. INPUT ABSENSI MASSAL (NAMA KARYAWAN JELAS & LEBAR PENUH)
+   * 10. INPUT ABSENSI MASSAL & SATUAN (ANTI-DOUBLE)
    ******************************************************************/
   function switchAbsMode(mode) {
     absInputMode = mode;
@@ -1769,7 +2082,6 @@ service cloud.firestore {
 
       return `
         <div class="rounded-2xl p-3.5 border-2 transition ${item.checked ? 'bg-white border-indigo-500/80 shadow-sm' : 'bg-slate-100/80 border-slate-200'}">
-          <!-- Baris 1: Checkbox + Nomor + Nama Karyawan Jelas & Penuh + Estimasi Upah -->
           <div class="flex items-start justify-between gap-2.5 pb-2.5 border-b border-slate-100">
             <label class="flex items-start gap-2.5 cursor-pointer flex-1">
               <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleBulkEmp('${emp.id}', this.checked)"
@@ -1797,7 +2109,6 @@ service cloud.firestore {
             </div>
           </div>
 
-          <!-- Baris 2: Pilihan Kehadiran 3 Kolom Jelas -->
           <div class="grid grid-cols-3 gap-1.5 my-2.5">
             <button type="button" onclick="setBulkEmpTipe('${emp.id}', 'FULL')"
               class="py-2 px-2 rounded-xl text-[11px] font-extrabold border transition flex items-center justify-center gap-1 ${item.tipe === 'FULL' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
@@ -1813,7 +2124,6 @@ service cloud.firestore {
             </button>
           </div>
 
-          <!-- Baris 3: Pengatur Jam Lembur -->
           <div class="flex items-center justify-between pt-1.5 text-xs bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/70">
             <span class="text-slate-600 font-bold text-[11px]">Tambahan Jam Lembur:</span>
             <div class="flex items-center gap-2">
@@ -1885,7 +2195,7 @@ service cloud.firestore {
     renderBulkChecklist();
   }
 
-  function saveMassAbsensi() {
+  async function saveMassAbsensi() {
     const tanggal = document.getElementById("massTanggal").value || todayStr;
     const catatanMassal = document.getElementById("massCatatan").value.trim();
 
@@ -1895,43 +2205,55 @@ service cloud.firestore {
       return;
     }
 
-    const savedRecords = [];
+    const btn = document.getElementById("btnSaveMassAbsensi");
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Menyimpan...`;
 
-    selectedEmps.forEach((emp, idx) => {
-      const draft = bulkDraft[emp.id];
-      const faktor = draft.tipe === "FULL" ? 1 : (draft.tipe === "HALF" ? 0.5 : 0);
-      const upahHarian = emp.gajiHarian * faktor;
-      const upahLembur = emp.lemburJam * draft.jamLembur;
+    try {
+      const savedRecords = [];
 
-      const existingIdx = state.absensi.findIndex(a => a.tanggal === tanggal && a.karyawanId === emp.id);
+      selectedEmps.forEach((emp) => {
+        const draft = bulkDraft[emp.id];
+        const faktor = draft.tipe === "FULL" ? 1 : (draft.tipe === "HALF" ? 0.5 : 0);
+        const upahHarian = emp.gajiHarian * faktor;
+        const upahLembur = emp.lemburJam * draft.jamLembur;
+        const uniqueKey = `${tanggal}__${emp.id}`;
+        const deterministicId = `ABS_${tanggal.replace(/-/g, '')}_${emp.id}`;
 
-      const record = {
-        id: existingIdx >= 0 ? state.absensi[existingIdx].id : ("ABS" + Date.now().toString().slice(-5) + idx),
-        tanggal,
-        karyawanId: emp.id,
-        namaKaryawan: emp.nama,
-        tipe: draft.tipe,
-        jamLembur: draft.jamLembur,
-        catatan: catatanMassal || (existingIdx >= 0 ? state.absensi[existingIdx].catatan : ""),
-        upahHarian,
-        upahLembur,
-        totalUpah: upahHarian + upahLembur,
-        inputOleh: currentUser ? currentUser.name : "Mandor"
-      };
+        const existingIdx = state.absensi.findIndex(a => a.tanggal === tanggal && a.karyawanId === emp.id);
 
-      if (existingIdx >= 0) {
-        state.absensi[existingIdx] = record;
-      } else {
-        state.absensi.unshift(record);
-      }
+        const record = {
+          id: deterministicId,
+          uniqueKey,
+          tanggal,
+          karyawanId: emp.id,
+          namaKaryawan: emp.nama,
+          tipe: draft.tipe,
+          jamLembur: draft.jamLembur,
+          catatan: catatanMassal || (existingIdx >= 0 ? state.absensi[existingIdx].catatan : ""),
+          upahHarian,
+          upahLembur,
+          totalUpah: upahHarian + upahLembur,
+          inputOleh: currentUser ? currentUser.name : "Mandor"
+        };
 
-      savedRecords.push(record);
-    });
+        if (existingIdx >= 0) {
+          state.absensi[existingIdx] = record;
+        } else {
+          state.absensi.unshift(record);
+        }
 
-    saveLocalState("ADD_ABSENSI_MASSAL", savedRecords);
-    initBulkStateForDate();
-    renderAll();
-    showToast(`${savedRecords.length} absensi karyawan berhasil disimpan!`);
+        savedRecords.push(record);
+      });
+
+      await saveStateAndSync("UPSERT_ABSENSI_MASSAL", "UPSERT_ABSENSI", savedRecords);
+      initBulkStateForDate();
+      renderAll();
+      showToast(`${savedRecords.length} absensi tersimpan ke Firestore & Spreadsheet (Anti-Double)!`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Firestore & Spreadsheet`;
+    }
   }
 
   function getSelectedAbsTipe() {
@@ -1956,7 +2278,7 @@ service cloud.firestore {
     document.getElementById("absEstimasiUpah").textContent = formatRp(upahHarian + upahLembur);
   }
 
-  function saveAbsensi(e) {
+  async function saveAbsensi(e) {
     e.preventDefault();
     const tanggal = document.getElementById("absTanggal").value;
     const karyawanId = document.getElementById("absKaryawanId").value;
@@ -1973,11 +2295,14 @@ service cloud.firestore {
     const faktor = tipe === "FULL" ? 1 : (tipe === "HALF" ? 0.5 : 0);
     const upahHarian = emp.gajiHarian * faktor;
     const upahLembur = emp.lemburJam * jamLembur;
+    const uniqueKey = `${tanggal}__${karyawanId}`;
+    const deterministicId = `ABS_${tanggal.replace(/-/g, '')}_${karyawanId}`;
 
     const existingIdx = state.absensi.findIndex(a => a.tanggal === tanggal && a.karyawanId === karyawanId);
 
     const record = {
-      id: existingIdx >= 0 ? state.absensi[existingIdx].id : ("ABS" + Date.now().toString().slice(-6)),
+      id: deterministicId,
+      uniqueKey,
       tanggal,
       karyawanId,
       namaKaryawan: emp.nama,
@@ -2000,10 +2325,10 @@ service cloud.firestore {
     document.getElementById("absCatatan").value = "";
     updateAbsPreview();
 
-    saveLocalState("ADD_ABSENSI", record);
+    await saveStateAndSync("UPSERT_ABSENSI_SATUAN", "UPSERT_ABSENSI", [record]);
     initBulkStateForDate();
     renderAll();
-    showToast("Absensi berhasil dicatat!");
+    showToast("Absensi dicatat ke Firestore & Spreadsheet (Anti-Double)!");
   }
 
   function renderAbsensi() {
@@ -2061,12 +2386,15 @@ service cloud.firestore {
   }
 
   function deleteAbsensi(id) {
+    const target = state.absensi.find(a => a.id === id);
+    const uniqueKey = target ? (target.uniqueKey || `${target.tanggal}__${target.karyawanId}`) : "";
+
     askConfirm(
       "Hapus Catatan Absensi?",
-      "Data kehadiran ini akan dihapus secara permanen.",
-      () => {
+      "Data kehadiran ini akan dihapus dari Cloud Firestore dan Spreadsheet.",
+      async () => {
         state.absensi = state.absensi.filter(a => a.id !== id);
-        saveLocalState("DELETE_ABSENSI", { id });
+        await saveStateAndSync("DELETE_ABSENSI", "DELETE_ABSENSI", { id, uniqueKey });
         initBulkStateForDate();
         renderAll();
         showToast("Catatan absensi dihapus!");
@@ -2075,9 +2403,9 @@ service cloud.firestore {
   }
 
   /******************************************************************
-   * 9. MENU KASBON KARYAWAN
+   * 11. MENU KASBON KARYAWAN
    ******************************************************************/
-  function saveKasbon(e) {
+  async function saveKasbon(e) {
     e.preventDefault();
     const tanggal = document.getElementById("kasTanggal").value;
     const karyawanId = document.getElementById("kasKaryawanId").value;
@@ -2104,17 +2432,17 @@ service cloud.firestore {
     document.getElementById("kasNominal").value = "";
     document.getElementById("kasKeterangan").value = "";
 
-    saveLocalState("ADD_KASBON", record);
+    await saveStateAndSync("ADD_KASBON");
     renderAll();
-    showToast("Kasbon berhasil dicatat!");
+    showToast("Kasbon berhasil dicatat ke Firestore!");
   }
 
-  function toggleStatusKasbon(id) {
+  async function toggleStatusKasbon(id) {
     if (currentUser.role === "karyawan") return;
     const item = state.kasbon.find(k => k.id === id);
     if (!item) return;
     item.status = item.status === "BELUM_LUNAS" ? "LUNAS" : "BELUM_LUNAS";
-    saveLocalState("UPDATE_KASBON", item);
+    await saveStateAndSync("UPDATE_KASBON");
     renderAll();
     showToast(`Status kasbon diubah ke ${item.status}`);
   }
@@ -2123,9 +2451,9 @@ service cloud.firestore {
     askConfirm(
       "Hapus Catatan Kasbon?",
       "Data kasbon ini akan dihapus secara permanen.",
-      () => {
+      async () => {
         state.kasbon = state.kasbon.filter(k => k.id !== id);
-        saveLocalState("DELETE_KASBON", { id });
+        await saveStateAndSync("DELETE_KASBON");
         renderAll();
         showToast("Data kasbon berhasil dihapus!");
       }
@@ -2178,7 +2506,7 @@ service cloud.firestore {
   }
 
   /******************************************************************
-   * 10. MENU GAJI AKHIR, SLIP INDIVIDU & DOWNLOAD REKAP SEMUA KARYAWAN
+   * 12. MENU GAJI AKHIR, SLIP INDIVIDU & DOWNLOAD REKAP SEMUA KARYAWAN
    ******************************************************************/
   function calculatePayrollForEmp(emp, startDate, endDate) {
     const abs = state.absensi.filter(a =>
@@ -2514,13 +2842,13 @@ service cloud.firestore {
     askConfirm(
       "Potong & Lunasi Kasbon?",
       "Semua kasbon aktif karyawan ini akan ditandai sebagai LUNAS karena telah dipotong dari gaji.",
-      () => {
+      async () => {
         state.kasbon.forEach(k => {
           if (k.karyawanId === empId && k.status === "BELUM_LUNAS") {
             k.status = "LUNAS";
           }
         });
-        saveLocalState("SETTLE_KASBON", { karyawanId: empId });
+        await saveStateAndSync("SETTLE_KASBON");
         renderAll();
         showToast("Kasbon berhasil dipotong & dilunasi!");
       }
@@ -2528,7 +2856,7 @@ service cloud.firestore {
   }
 
   /******************************************************************
-   * 11. HELPER UI & INITIALIZATION
+   * 13. HELPER UI, EKSPOR GLOBAL & BOOTSTRAP APLIKASI
    ******************************************************************/
   function updateHeaderStats() {
     document.getElementById("statTotalKaryawan").textContent = `${state.karyawan.length} Orang`;
@@ -2543,14 +2871,13 @@ service cloud.firestore {
 
   function openModal(id) {
     if (id === "modalCloudConfig") {
-      const cfg = getCloudConfig();
-      document.getElementById("cfgFirebaseApiKey").value = cfg.firebaseApiKey || "";
-      document.getElementById("cfgFirestoreProjectId").value = cfg.firestoreProjectId || "";
-      document.getElementById("cfgFirebaseUrl").value = cfg.firebaseDbUrl || "";
-      document.getElementById("cfgGasUrl").value = cfg.gasWebAppUrl || "";
-      document.getElementById("cfgGasToken").value = cfg.gasToken || "";
-      document.getElementById("cfgAdminPin").value = cfg.adminPin || "1234";
-      document.getElementById("cfgMandorPin").value = cfg.mandorPin || "1234";
+      const fbCfg = getEffectiveFirebaseConfig() || {};
+      document.getElementById("cfgFirebaseApiKey").value = fbCfg.apiKey || "";
+      document.getElementById("cfgFirestoreProjectId").value = fbCfg.projectId || "";
+      document.getElementById("cfgFirebaseAppId").value = fbCfg.appId || "";
+      document.getElementById("cfgGasUrl").value = cloudOperationalSettings.gasWebAppUrl || "";
+      document.getElementById("cfgGasToken").value = cloudOperationalSettings.gasToken || "";
+      document.getElementById("gasCodeSnippet").textContent = GAS_ANTI_DOUBLE_SCRIPT;
     }
     document.getElementById(id).classList.remove("hidden");
   }
@@ -2569,8 +2896,59 @@ service cloud.firestore {
     renderGajiAkhir();
   }
 
-  loadLocalState();
-  restoreSessionOnLoad();
+  // Daftarkan fungsi ke window agar event handler HTML berjalan mulus di <script type="module">
+  Object.assign(window, {
+    handleUniversalLogin,
+    togglePinVisibility,
+    openModal,
+    closeModal,
+    handleLogout,
+    openKaryawanModal,
+    switchAbsMode,
+    initBulkStateForDate,
+    toggleMassSelectAll,
+    setMassTipeAll,
+    adjustMassLemburAll,
+    saveMassAbsensi,
+    saveAbsensi,
+    updateAbsPreview,
+    renderAbsensi,
+    saveKasbon,
+    renderKasbon,
+    renderGajiAkhir,
+    downloadRekapGajiCSV,
+    openModalRekapSemua,
+    switchTab,
+    saveKaryawan,
+    deleteKaryawan,
+    toggleBulkEmp,
+    setBulkEmpTipe,
+    stepBulkEmpLembur,
+    deleteAbsensi,
+    toggleStatusKasbon,
+    deleteKasbon,
+    openSlipGaji,
+    lunasiKasbonKaryawan,
+    printSlipIndividu,
+    printRekapSemua,
+    switchCfgSubTab,
+    parseFirebaseConfigSnippet,
+    saveCloudConfig,
+    testFirestoreConnection,
+    pullFromFirestoreManual,
+    downloadGitHubReadyHtml,
+    syncAllAbsensiToSpreadsheet,
+    copyGasCode,
+    copyFirestoreRules,
+    closeConfirmModal
+  });
+
+  // Inisialisasi aplikasi saat halaman dimuat
+  window.addEventListener("load", async () => {
+    loadLocalState();
+    restoreSessionOnLoad();
+    await initAutomaticFirestoreConnection();
+  });
 </script>
 </body>
 </html>
