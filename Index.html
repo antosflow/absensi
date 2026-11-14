@@ -1,0 +1,2576 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Workforce Pro - Absensi, Kasbon & Slip Gaji</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .app-container {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background-color: #f8fafc;
+      position: relative;
+      padding-bottom: 95px;
+      box-shadow: 0 0 40px rgba(0,0,0,0.4);
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Mode Cetak Slip Gaji & Rekap Gaji Semua Karyawan */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+      }
+      body * {
+        visibility: hidden;
+      }
+      body.print-mode-slip #printArea,
+      body.print-mode-slip #printArea * {
+        visibility: visible;
+      }
+      body.print-mode-slip #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+      }
+      body.print-mode-rekap #printRekapArea,
+      body.print-mode-rekap #printRekapArea * {
+        visibility: visible;
+      }
+      body.print-mode-rekap #printRekapArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+        padding: 10px !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="print-mode-slip">
+
+<div class="app-container" id="app">
+
+  <!-- ================= UNIVERSAL LOGIN SCREEN ================= -->
+  <div id="loginScreen" class="min-h-screen flex flex-col justify-between bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 text-white">
+    <div class="mt-8 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center mx-auto mb-4 shadow-lg">
+        <i class="fa-solid fa-helmet-safety text-3xl text-indigo-400"></i>
+      </div>
+      <h1 class="text-2xl font-extrabold tracking-tight">WORKFORCE PRO</h1>
+      <p class="text-xs text-slate-400 mt-1">Sistem Terpadu Absensi, Kasbon & Slip Gaji</p>
+    </div>
+
+    <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-6 shadow-2xl my-auto">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-bold">Login Universal</h2>
+        <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-[10px] font-bold text-indigo-300">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Auto-Detect Role
+        </span>
+      </div>
+      <p class="text-xs text-slate-300 mb-5">
+        Masukkan <b>Username / No. HP / Email</b> beserta <b>PIN</b> Anda. Sistem otomatis mengenali akun Admin, Mandor, atau Karyawan.
+      </p>
+
+      <form onsubmit="handleUniversalLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">ID Pengguna (No. HP / Username / Email)</label>
+          <div class="relative">
+            <i class="fa-solid fa-user-check absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+            <input type="text" id="loginIdentifier" required autocomplete="username" placeholder="Contoh: 081234567890 / mandor / admin"
+              class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/70 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">PIN / Kata Sandi</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+            <input type="password" id="loginPin" required autocomplete="current-password" placeholder="Masukkan PIN Anda"
+              class="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-900/70 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400" />
+            <button type="button" onclick="togglePinVisibility()" class="absolute right-3.5 top-3 text-slate-400 hover:text-white">
+              <i id="pinEyeIcon" class="fa-regular fa-eye text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-300">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="rememberSession" checked class="rounded text-indigo-500 focus:ring-0" />
+            <span>Tetap masuk saat halaman di-refresh</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btnSubmitLogin" class="w-full py-3.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 active:scale-[0.99] transition font-bold text-sm shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2">
+          <span>Masuk Sekarang</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center text-[11px] text-slate-500">Dilindungi Cloud Firestore, Firebase Auth & Google Sheets</p>
+  </div>
+
+  <!-- ================= MAIN APP SCREEN ================= -->
+  <div id="mainScreen" class="hidden">
+    <!-- Top Header -->
+    <header class="bg-slate-900 text-white pt-5 pb-6 px-5 rounded-b-3xl shadow-md sticky top-0 z-30">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="userRoleBadge" class="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-full bg-indigo-500 text-white">ADMIN</span>
+            <span id="cloudStatusBadge" class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Sesi Aktif
+            </span>
+          </div>
+          <h1 id="activeUserName" class="text-lg font-extrabold mt-1">Administrator</h1>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnCloudConfig" onclick="openModal('modalCloudConfig')" title="Pengaturan Koneksi Cloud Firestore & Auth" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-indigo-400 border border-slate-700">
+            <i class="fa-solid fa-cloud-bolt text-sm"></i>
+          </button>
+          <button onclick="handleLogout()" title="Keluar / Logout" class="w-9 h-9 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 flex items-center justify-center">
+            <i class="fa-solid fa-power-off text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Summary Bar -->
+      <div class="grid grid-cols-3 gap-2.5 mt-4">
+        <div class="bg-slate-800/90 border border-slate-700/70 rounded-2xl p-2.5">
+          <p class="text-[10px] text-slate-400">Total Karyawan</p>
+          <p id="statTotalKaryawan" class="text-base font-extrabold text-white mt-0.5">0 Orang</p>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700/70 rounded-2xl p-2.5">
+          <p class="text-[10px] text-slate-400">Hadir Hari Ini</p>
+          <p id="statHadirHariIni" class="text-base font-extrabold text-emerald-400 mt-0.5">0 Orang</p>
+        </div>
+        <div class="bg-slate-800/90 border border-slate-700/70 rounded-2xl p-2.5">
+          <p class="text-[10px] text-slate-400">Kasbon Aktif</p>
+          <p id="statTotalKasbon" class="text-xs font-extrabold text-amber-400 mt-1 truncate">Rp 0</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT TABS -->
+    <main class="p-4 space-y-4">
+
+      <!-- ================= TAB 1: DAFTAR KARYAWAN ================= -->
+      <section id="tab_karyawan" class="tab-section space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-extrabold text-slate-800">Daftar Karyawan</h2>
+            <p class="text-xs text-slate-500">Data profil, login, gaji harian & tarif lembur</p>
+          </div>
+          <button id="btnAddKaryawan" onclick="openKaryawanModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 flex items-center gap-1.5">
+            <i class="fa-solid fa-user-plus"></i> Tambah
+          </button>
+        </div>
+
+        <div id="karyawanList" class="space-y-2.5"></div>
+      </section>
+
+      <!-- ================= TAB 2: MENU ABSENSI (MASSAL & SATUAN) ================= -->
+      <section id="tab_absensi" class="tab-section hidden space-y-4">
+
+        <!-- Wrapper Input Absensi (Admin & Mandor) -->
+        <div id="formAbsensiCard" class="space-y-3">
+
+          <!-- Switcher Mode: Massal vs Satuan -->
+          <div class="bg-slate-200/80 p-1 rounded-2xl grid grid-cols-2 gap-1">
+            <button type="button" id="btnModeMassal" onclick="switchAbsMode('MASSAL')" class="py-2 rounded-xl text-xs font-extrabold bg-white text-indigo-600 shadow-sm transition">
+              <i class="fa-solid fa-list-check mr-1"></i> Checklist Massal (1-Klik)
+            </button>
+            <button type="button" id="btnModeSatuan" onclick="switchAbsMode('SATUAN')" class="py-2 rounded-xl text-xs font-bold text-slate-600 transition">
+              <i class="fa-solid fa-user-check mr-1"></i> Input Satuan
+            </button>
+          </div>
+
+          <!-- ========== PANEL 1: MODE ABSENSI MASSAL ========== -->
+          <div id="panelAbsMassal" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3.5">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <i class="fa-solid fa-bolt text-amber-500"></i> Absensi Massal Sekaligus
+                </h2>
+                <p class="text-[11px] text-slate-500">Centang karyawan hadir & set status dalam 1 klik</p>
+              </div>
+              <span id="massSelectedCountBadge" class="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold">
+                0 Dipilih
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Tanggal Absensi</label>
+                <input type="date" id="massTanggal" onchange="initBulkStateForDate()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1">Lokasi / Proyek (Semua)</label>
+                <input type="text" id="massCatatan" placeholder="Contoh: Proyek Gudang" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-indigo-500" />
+              </div>
+            </div>
+
+            <!-- Toolbar Aksi Cepat 1-Klik -->
+            <div class="bg-slate-100 p-3 rounded-2xl border border-slate-200 space-y-2.5">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <button type="button" onclick="toggleMassSelectAll()" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-[11px] font-extrabold flex items-center gap-1.5 active:scale-95 transition shadow-sm">
+                  <i class="fa-solid fa-check-double text-emerald-400"></i>
+                  <span id="labelCheckAll">Centang Semua</span>
+                </button>
+
+                <div class="flex items-center gap-1">
+                  <span class="text-[10px] font-extrabold text-slate-600 mr-1">Set Semua:</span>
+                  <button type="button" onclick="setMassTipeAll('FULL')" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-[10px] font-extrabold shadow-sm">
+                    Full
+                  </button>
+                  <button type="button" onclick="setMassTipeAll('HALF')" class="px-2.5 py-1 rounded-lg bg-amber-500 text-white hover:bg-amber-600 text-[10px] font-extrabold shadow-sm">
+                    1/2 Hari
+                  </button>
+                  <button type="button" onclick="setMassTipeAll('LEMBUR_SAJA')" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-[10px] font-extrabold shadow-sm">
+                    Lembur
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-2 border-t border-slate-200">
+                <span class="text-[10px] font-extrabold text-slate-600">Lembur Massal (Yg Dicentang):</span>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="adjustMassLemburAll(0, true)" class="px-2 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 text-[10px] font-extrabold">Reset 0</button>
+                  <button type="button" onclick="adjustMassLemburAll(1, false)" class="px-2 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-extrabold">+1 Jam</button>
+                  <button type="button" onclick="adjustMassLemburAll(2, false)" class="px-2 py-1 rounded-lg bg-emerald-700 text-white text-[10px] font-extrabold">+2 Jam</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Daftar Checklist Karyawan -->
+            <div id="massEmployeeList" class="space-y-2.5 max-h-[460px] overflow-y-auto pr-0.5"></div>
+
+            <!-- Ringkasan & Tombol Simpan Massal -->
+            <div class="bg-indigo-950 text-white p-3.5 rounded-2xl space-y-2.5 shadow-lg">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-300">Total Upah Hari Ini (<span id="massSummaryCount" class="font-bold text-white">0</span> org):</span>
+                <span id="massEstimasiTotal" class="text-base font-extrabold text-emerald-400">Rp 0</span>
+              </div>
+              <button type="button" onclick="saveMassAbsensi()" class="w-full py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 active:scale-[0.99] transition text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Simpan Absensi Massal Sekaligus
+              </button>
+            </div>
+          </div>
+
+          <!-- ========== PANEL 2: MODE ABSENSI SATUAN ========== -->
+          <div id="panelAbsSatuan" class="hidden bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-calendar-check text-indigo-600"></i> Input Absensi Per Karyawan
+              </h2>
+            </div>
+
+            <form onsubmit="saveAbsensi(event)" class="space-y-3">
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal</label>
+                  <input type="date" id="absTanggal" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilih Karyawan</label>
+                  <select id="absKaryawanId" required onchange="updateAbsPreview()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white focus:outline-none focus:border-indigo-500"></select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1.5">Jenis Kehadiran Harian</label>
+                <div class="grid grid-cols-3 gap-2">
+                  <label class="cursor-pointer">
+                    <input type="radio" name="absTipe" value="FULL" checked class="peer hidden" onchange="updateAbsPreview()" />
+                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 transition">
+                      <i class="fa-solid fa-circle-check text-sm mb-0.5 block"></i>
+                      <span class="text-[11px] font-bold block">Harian Full</span>
+                      <span class="text-[9px] text-slate-500">100% Gaji Harian</span>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="absTipe" value="HALF" class="peer hidden" onchange="updateAbsPreview()" />
+                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:border-amber-500 peer-checked:bg-amber-50 peer-checked:text-amber-700 transition">
+                      <i class="fa-solid fa-circle-half-stroke text-sm mb-0.5 block"></i>
+                      <span class="text-[11px] font-bold block">Setengah Hari</span>
+                      <span class="text-[9px] text-slate-500">50% Gaji Harian</span>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="absTipe" value="LEMBUR_SAJA" class="peer hidden" onchange="updateAbsPreview()" />
+                    <div class="p-2.5 rounded-xl border border-slate-200 text-center peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition">
+                      <i class="fa-solid fa-clock text-sm mb-0.5 block"></i>
+                      <span class="text-[11px] font-bold block">Lembur Jam</span>
+                      <span class="text-[9px] text-slate-500">Hanya Jam Lembur</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2.5 items-center">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Tambahan Lembur (Jam)</label>
+                  <div class="relative">
+                    <input type="number" id="absJamLembur" value="0" min="0" step="0.5" oninput="updateAbsPreview()"
+                      class="w-full pl-3 pr-10 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:border-indigo-500" />
+                    <span class="absolute right-3 top-2 text-[11px] text-slate-400 font-semibold">Jam</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 mb-1">Catatan (Opsional)</label>
+                  <input type="text" id="absCatatan" placeholder="Proyek / Lokasi..."
+                    class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-500" />
+                </div>
+              </div>
+
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                <span class="text-xs text-slate-500 font-medium">Estimasi Upah Hari Ini:</span>
+                <span id="absEstimasiUpah" class="text-sm font-extrabold text-indigo-600">Rp 0</span>
+              </div>
+
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-500/20">
+                <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Absensi Satuan
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Riwayat Absensi -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-extrabold text-slate-800">Riwayat Absensi Tersimpan</h3>
+            <div class="flex items-center gap-1.5">
+              <input type="date" id="filterAbsTanggal" onchange="renderAbsensi()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs bg-white" />
+              <button onclick="document.getElementById('filterAbsTanggal').value=''; renderAbsensi();" class="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[10px] font-bold">Semua</button>
+            </div>
+          </div>
+          <div id="absensiList" class="space-y-2"></div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: MENU KASBON ================= -->
+      <section id="tab_kasbon" class="tab-section hidden space-y-4">
+        <div id="formKasbonCard" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+          <h2 class="text-sm font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-hand-holding-dollar text-amber-500"></i> Pencatatan Kasbon Karyawan
+          </h2>
+          <form onsubmit="saveKasbon(event)" class="space-y-3">
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal</label>
+                <input type="date" id="kasTanggal" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilih Karyawan</label>
+                <select id="kasKaryawanId" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"></select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nominal Kasbon (Rp)</label>
+                <input type="number" id="kasNominal" required min="1000" step="1000" placeholder="Contoh: 100000"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Keperluan / Ket.</label>
+                <input type="text" id="kasKeterangan" required placeholder="Uang makan / darurat"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20">
+              <i class="fa-solid fa-plus-circle mr-1"></i> Catat Kasbon
+            </button>
+          </form>
+        </div>
+
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-extrabold text-slate-800">Daftar Riwayat Kasbon</h3>
+            <select id="filterKasStatus" onchange="renderKasbon()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs bg-white">
+              <option value="ALL">Semua Status</option>
+              <option value="BELUM_LUNAS">Belum Lunas</option>
+              <option value="LUNAS">Sudah Lunas</option>
+            </select>
+          </div>
+          <div id="kasbonList" class="space-y-2"></div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: GAJI AKHIR & SLIP GAJI ================= -->
+      <section id="tab_gaji" class="tab-section hidden space-y-4">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3.5">
+          <div>
+            <h2 class="text-sm font-extrabold text-slate-800 mb-0.5">Perhitungan Gaji Akhir & Rekapitulasi</h2>
+            <p class="text-[11px] text-slate-500">Otomatis menghitung Harian Full, Setengah Hari, Jam Lembur & Potongan Kasbon</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-1">Dari Tanggal</label>
+              <input type="date" id="gajiStartDate" onchange="renderGajiAkhir()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-1">Sampai Tanggal</label>
+              <input type="date" id="gajiEndDate" onchange="renderGajiAkhir()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold" />
+            </div>
+          </div>
+
+          <!-- Ringkasan Total Rekap & Tombol Download Semua Karyawan -->
+          <div id="rekapAllActionCard" class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-3.5 rounded-2xl space-y-3 shadow-md">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
+              <div>
+                <span class="text-[10px] uppercase tracking-wider font-bold text-indigo-300 block">Total Gaji Bersih (<span id="rekapCountEmp">0</span> Karyawan)</span>
+                <span id="rekapGrandTotalBersih" class="text-lg font-extrabold text-emerald-400">Rp 0</span>
+              </div>
+              <div class="text-right text-[11px]">
+                <span class="text-slate-300 block">Kotor: <b id="rekapGrandTotalKotor" class="text-white">Rp 0</b></span>
+                <span class="text-rose-300 block">Kasbon: <b id="rekapGrandTotalKasbon">- Rp 0</b></span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" onclick="downloadRekapGajiCSV()" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition text-white text-[11px] font-extrabold flex items-center justify-center gap-1.5 shadow">
+                <i class="fa-solid fa-file-excel text-sm"></i> Download Excel (CSV)
+              </button>
+              <button type="button" onclick="openModalRekapSemua()" class="py-2.5 px-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 active:scale-95 transition text-white text-[11px] font-extrabold flex items-center justify-center gap-1.5 shadow">
+                <i class="fa-solid fa-file-pdf text-sm"></i> Rekap PDF / Cetak
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="gajiList" class="space-y-3"></div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-slate-200 px-3 py-2 flex justify-around items-center z-40 shadow-lg">
+      <button onclick="switchTab('karyawan')" id="nav_karyawan" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl text-indigo-600">
+        <i class="fa-solid fa-users text-base"></i>
+        <span class="text-[10px] font-bold mt-1">Karyawan</span>
+      </button>
+      <button onclick="switchTab('absensi')" id="nav_absensi" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl text-slate-400">
+        <i class="fa-solid fa-list-check text-base"></i>
+        <span class="text-[10px] font-bold mt-1">Absensi</span>
+      </button>
+      <button onclick="switchTab('kasbon')" id="nav_kasbon" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl text-slate-400">
+        <i class="fa-solid fa-hand-holding-dollar text-base"></i>
+        <span class="text-[10px] font-bold mt-1">Kasbon</span>
+      </button>
+      <button onclick="switchTab('gaji')" id="nav_gaji" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl text-slate-400">
+        <i class="fa-solid fa-file-invoice-dollar text-base"></i>
+        <span class="text-[10px] font-bold mt-1">Slip Gaji</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ================= MODAL TAMBAH / EDIT KARYAWAN ================= -->
+  <div id="modalKaryawan" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-[480px] rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="modalKaryawanTitle" class="text-base font-extrabold text-slate-800">Tambah Karyawan</h3>
+        <button onclick="closeModal('modalKaryawan')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveKaryawan(event)" class="space-y-3">
+        <input type="hidden" id="empId" />
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Lengkap</label>
+          <input type="text" id="empNama" required placeholder="Nama Karyawan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Alamat Lengkap</label>
+          <input type="text" id="empAlamat" required placeholder="Alamat domisili" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs" />
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">No. HP / Email Login</label>
+            <input type="text" id="empHp" required placeholder="081234567890" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">PIN Login (Min. 4 Digit)</label>
+            <input type="text" id="empPin" required value="1111" placeholder="1111" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Gaji Harian Full (Rp)</label>
+            <input type="number" id="empGajiHarian" required min="0" step="1000" placeholder="150000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-indigo-600" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Ongkos Lembur / Jam (Rp)</label>
+            <input type="number" id="empLemburJam" required min="0" step="500" placeholder="20000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-emerald-600" />
+          </div>
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-lg shadow-indigo-500/20 mt-2">
+          Simpan & Daftarkan Akses Login
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL SLIP GAJI INDIVIDU ================= -->
+  <div id="modalSlipGaji" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-[420px] rounded-3xl p-5 shadow-2xl my-auto">
+      <div id="printArea" class="p-2">
+        <div class="text-center border-b border-dashed border-slate-300 pb-3 mb-3">
+          <h3 class="text-base font-extrabold text-slate-900 uppercase">SLIP GAJI KARYAWAN</h3>
+          <p id="slipPeriode" class="text-[11px] text-slate-500 font-medium"></p>
+        </div>
+
+        <div class="space-y-1 text-xs mb-3 bg-slate-50 p-3 rounded-xl">
+          <div class="flex justify-between"><span class="text-slate-500">Nama:</span><span id="slipNama" class="font-bold text-slate-800"></span></div>
+          <div class="flex justify-between"><span class="text-slate-500">No. HP:</span><span id="slipHp" class="font-semibold text-slate-700"></span></div>
+          <div class="flex justify-between"><span class="text-slate-500">Alamat:</span><span id="slipAlamat" class="font-medium text-slate-700 text-right"></span></div>
+        </div>
+
+        <div class="space-y-2 text-xs border-b border-dashed border-slate-300 pb-3 mb-3">
+          <p class="font-bold text-slate-700 text-[11px] uppercase tracking-wider">Rincian Pendapatan</p>
+          <div class="flex justify-between">
+            <span id="slipLabelFull" class="text-slate-600">Harian Full</span>
+            <span id="slipValFull" class="font-bold text-slate-800"></span>
+          </div>
+          <div class="flex justify-between">
+            <span id="slipLabelHalf" class="text-slate-600">Setengah Hari</span>
+            <span id="slipValHalf" class="font-bold text-slate-800"></span>
+          </div>
+          <div class="flex justify-between">
+            <span id="slipLabelLembur" class="text-slate-600">Lembur Jam-an</span>
+            <span id="slipValLembur" class="font-bold text-emerald-600"></span>
+          </div>
+          <div class="flex justify-between pt-1 border-t border-slate-100 font-bold">
+            <span>Gaji Kotor (Subtotal)</span>
+            <span id="slipSubtotal"></span>
+          </div>
+        </div>
+
+        <div class="space-y-1.5 text-xs border-b border-dashed border-slate-300 pb-3 mb-3">
+          <p class="font-bold text-slate-700 text-[11px] uppercase tracking-wider">Potongan</p>
+          <div class="flex justify-between text-rose-600">
+            <span>Total Kasbon Aktif</span>
+            <span id="slipKasbon" class="font-bold"></span>
+          </div>
+        </div>
+
+        <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-3.5 flex justify-between items-center">
+          <div>
+            <p class="text-[10px] font-bold uppercase text-indigo-500">Gaji Bersih Diterima</p>
+            <p class="text-[10px] text-slate-500">Take Home Pay</p>
+          </div>
+          <p id="slipTotalBersih" class="text-lg font-extrabold text-indigo-700"></p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mt-4 no-print">
+        <button onclick="printSlipIndividu()" class="py-2.5 rounded-xl bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-print"></i> Cetak / PDF
+        </button>
+        <button id="btnWaSlip" class="py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center justify-center gap-1.5">
+          <i class="fa-brands fa-whatsapp text-sm"></i> Kirim WA
+        </button>
+      </div>
+      <button onclick="closeModal('modalSlipGaji')" class="w-full mt-2 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold no-print">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL REKAP GAJI SEMUA KARYAWAN (CETAK / DOWNLOAD) ================= -->
+  <div id="modalRekapSemua" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-[480px] rounded-3xl p-4 sm:p-5 shadow-2xl my-auto max-h-[92vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 no-print">
+        <div>
+          <h3 class="text-sm font-extrabold text-slate-800">Rekap Gaji Semua Karyawan</h3>
+          <p class="text-[11px] text-slate-500">Siap dicetak ke PDF atau diunduh ke Excel (CSV)</p>
+        </div>
+        <button onclick="closeModal('modalRekapSemua')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Area Cetak Rekap Semua Karyawan -->
+      <div id="printRekapArea" class="overflow-y-auto py-3 space-y-3 flex-1">
+        <div class="text-center border-b border-slate-300 pb-2.5">
+          <h2 class="text-sm font-extrabold text-slate-900 uppercase tracking-wide">LAPORAN REKAPITULASI GAJI KARYAWAN</h2>
+          <p id="rekapModalPeriode" class="text-[11px] text-slate-600 font-semibold mt-0.5"></p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-[10px]">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-y border-slate-300 font-extrabold">
+                <th class="py-2 px-1.5">Nama Karyawan</th>
+                <th class="py-2 px-1 text-center">Hadir</th>
+                <th class="py-2 px-1 text-center">Lembur</th>
+                <th class="py-2 px-1.5 text-right">Gaji Kotor</th>
+                <th class="py-2 px-1.5 text-right">Kasbon</th>
+                <th class="py-2 px-1.5 text-right">Gaji Bersih</th>
+              </tr>
+            </thead>
+            <tbody id="rekapModalTableBody" class="divide-y divide-slate-200 text-slate-800"></tbody>
+            <tfoot id="rekapModalTableFoot" class="bg-indigo-50 font-extrabold text-slate-900 border-t-2 border-slate-400"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-3 border-t border-slate-200 no-print">
+        <button onclick="downloadRekapGajiCSV()" class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-file-excel"></i> Unduh Excel (CSV)
+        </button>
+        <button onclick="printRekapSemua()" class="py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-print"></i> Cetak / Simpan PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL KONFIGURASI CLOUD FIRESTORE & AUTH (ADMIN) ================= -->
+  <div id="modalCloudConfig" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white w-full max-w-[460px] rounded-3xl p-5 shadow-2xl space-y-3.5 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-fire text-amber-500"></i> Koneksi Cloud Firestore & Auth
+          </h3>
+          <p class="text-[11px] text-slate-500">Sinkronisasi real-time ke database Cloud Firestore</p>
+        </div>
+        <button onclick="closeModal('modalCloudConfig')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- FITUR TEMPEL OTOMATIS FIREBASE CONFIG -->
+      <div class="bg-indigo-50/80 border border-indigo-200 rounded-2xl p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-extrabold text-indigo-900">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1 text-indigo-600"></i>Isi Otomatis dari Kode `firebaseConfig`
+          </span>
+          <button type="button" onclick="parseFirebaseConfigSnippet()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-extrabold shadow-sm">
+            Ekstrak Otomatis
+          </button>
+        </div>
+        <textarea id="rawFirebaseSnippet" rows="2" placeholder='Tempel kode const firebaseConfig = { apiKey: "...", projectId: "..." } dari Firebase Console di sini lalu klik Ekstrak Otomatis'
+          class="w-full px-2.5 py-1.5 rounded-xl border border-indigo-200 text-[10px] font-mono bg-white focus:outline-none focus:border-indigo-500"></textarea>
+      </div>
+
+      <div class="space-y-2.5">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+            1. Firebase Web API Key <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="cfgFirebaseApiKey" placeholder="AIzaSyB..."
+            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+            2. Cloud Firestore Project ID <span class="text-emerald-600 font-extrabold">(Utama - Disarankan)</span>
+          </label>
+          <input type="text" id="cfgFirestoreProjectId" placeholder="Contoh: workforce-pro-12345"
+            class="w-full px-3 py-2 rounded-xl border border-emerald-400 bg-emerald-50/30 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-emerald-600" />
+          <p class="text-[10px] text-slate-500 mt-0.5">Lihat di Firebase Console &rarr; Project Settings &rarr; <b>Project ID</b>.</p>
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">
+            3. Realtime Database URL <span class="text-slate-400 font-normal">(Opsional / Cadangan)</span>
+          </label>
+          <input type="url" id="cfgFirebaseUrl" placeholder="https://nama-project-default-rtdb.asia-southeast1.firebasedatabase.app"
+            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 mb-1">4. Google Script URL (Opsional)</label>
+            <input type="url" id="cfgGasUrl" placeholder="https://script.google.com/..."
+              class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-[11px]" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 mb-1">Secret Token Sheet</label>
+            <input type="password" id="cfgGasToken" placeholder="RAHASIA_PROYEK_2026"
+              class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-[11px]" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Kredensial Admin & Mandor -->
+      <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
+        <p class="text-[11px] font-extrabold text-slate-700">Kredensial Login Admin & Mandor</p>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500">PIN Admin (`admin`)</label>
+            <input type="text" id="cfgAdminPin" value="1234" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500">PIN Mandor (`mandor`)</label>
+            <input type="text" id="cfgMandorPin" value="1234" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Contoh Rules Cloud Firestore -->
+      <details class="bg-slate-900 text-slate-200 rounded-2xl p-3 text-[11px]">
+        <summary class="font-extrabold cursor-pointer text-amber-400">
+          <i class="fa-solid fa-code mr-1"></i> Lihat Rules Cloud Firestore (Salin ke Tab Rules)
+        </summary>
+        <pre class="mt-2 text-[10px] font-mono bg-slate-950 p-2.5 rounded-xl overflow-x-auto text-emerald-300">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}</pre>
+        <p class="text-[10px] text-slate-400 mt-1.5">Jika sudah mengaktifkan Firebase Auth (Email/Password), Anda bisa mengganti <code class="text-amber-300">if true;</code> menjadi <code class="text-emerald-300">if request.auth != null;</code>.</p>
+      </details>
+
+      <div class="flex flex-col gap-2 pt-1">
+        <button type="button" onclick="saveCloudConfig()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow">
+          <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Konfigurasi & Sinkronkan ke Firestore
+        </button>
+
+        <div class="grid grid-cols-3 gap-1.5">
+          <button type="button" onclick="testFirestoreConnection()" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-extrabold">
+            <i class="fa-solid fa-plug-circle-check mr-1 text-emerald-400"></i> Tes Koneksi
+          </button>
+          <button type="button" onclick="provisionAllUsersToFirebaseAuth()" class="py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-extrabold">
+            <i class="fa-solid fa-user-lock mr-1"></i> Sync Auth
+          </button>
+          <button type="button" onclick="pullFromFirebase()" class="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold">
+            <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Tarik Data
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CUSTOM CONFIRMATION MODAL ================= -->
+  <div id="modalConfirm" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-[360px] rounded-3xl p-5 shadow-2xl text-center space-y-4">
+      <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h3 id="confirmTitle" class="text-sm font-extrabold text-slate-800">Konfirmasi Tindakan</h3>
+        <p id="confirmMessage" class="text-xs text-slate-500 mt-1"></p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button type="button" onclick="closeConfirmModal()" class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+          Batal
+        </button>
+        <button type="button" id="btnConfirmYes" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md shadow-rose-500/20">
+          Ya, Lanjutkan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold flex items-center gap-2 max-w-[90vw]">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMsg">Berhasil disimpan</span>
+  </div>
+
+</div>
+
+<script>
+  /******************************************************************
+   * 1. KONFIGURASI DEFAULT & KUNCI PENYIMPANAN PERMANEN
+   ******************************************************************/
+  const DEFAULT_CLOUD_CONFIG = {
+    firebaseApiKey: "",
+    firestoreProjectId: "", // ID Project untuk Cloud Firestore
+    firebaseDbUrl: "",      // Opsional untuk Realtime Database
+    gasWebAppUrl: "",
+    gasToken: "RAHASIA_PROYEK_2026",
+    adminPin: "1234",
+    mandorPin: "1234"
+  };
+
+  const STORAGE_KEYS = {
+    STATE: "wf_pro_state_v2",
+    SEEDED_FLAG: "wf_pro_dummy_seeded_v2",
+    SESSION: "wf_pro_session_v2",
+    ACTIVE_TAB: "wf_pro_active_tab_v2",
+    CLOUD_CFG: "wf_cloud_cfg_v2"
+  };
+
+  let currentUser = null;
+  let absInputMode = "MASSAL";
+  let bulkDraft = {};
+  let confirmCallback = null;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const firstDayStr = todayStr.substring(0, 8) + "01";
+
+  const INITIAL_DUMMY_STATE = {
+    updatedAt: 0,
+    karyawan: [
+      { id: "EMP01", nama: "Budi Santoso", alamat: "Jl. Raya Pemaron No. 12", hp: "081234567890", pin: "1111", gajiHarian: 150000, lemburJam: 20000 },
+      { id: "EMP02", nama: "I Made Wirawan", alamat: "Br. Dauh Marga, Singaraja", hp: "081999888777", pin: "2222", gajiHarian: 175000, lemburJam: 25000 },
+      { id: "EMP03", nama: "Ketut Adi Putra", alamat: "Jl. Pulau Dewata 3", hp: "085738990011", pin: "3333", gajiHarian: 160000, lemburJam: 20000 }
+    ],
+    absensi: [
+      { id: "ABS01", tanggal: todayStr, karyawanId: "EMP01", namaKaryawan: "Budi Santoso", tipe: "FULL", jamLembur: 2, catatan: "Proyek Gudang", upahHarian: 150000, upahLembur: 40000, totalUpah: 190000 },
+      { id: "ABS02", tanggal: todayStr, karyawanId: "EMP02", namaKaryawan: "I Made Wirawan", tipe: "HALF", jamLembur: 1, catatan: "Shift Pagi", upahHarian: 87500, upahLembur: 25000, totalUpah: 112500 }
+    ],
+    kasbon: [
+      { id: "KAS01", tanggal: todayStr, karyawanId: "EMP01", namaKaryawan: "Budi Santoso", nominal: 50000, keterangan: "Beli bensin & makan", status: "BELUM_LUNAS" }
+    ]
+  };
+
+  let state = {
+    updatedAt: Date.now(),
+    karyawan: [],
+    absensi: [],
+    kasbon: []
+  };
+
+  /******************************************************************
+   * 2. MODAL KONFIRMASI & TOAST
+   ******************************************************************/
+  function askConfirm(title, message, onYes) {
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmMessage").textContent = message;
+    confirmCallback = onYes;
+    document.getElementById("modalConfirm").classList.remove("hidden");
+  }
+
+  function closeConfirmModal() {
+    document.getElementById("modalConfirm").classList.add("hidden");
+    confirmCallback = null;
+  }
+
+  document.getElementById("btnConfirmYes").addEventListener("click", () => {
+    const cb = confirmCallback;
+    closeConfirmModal();
+    if (typeof cb === "function") cb();
+  });
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById("toast");
+    const icon = document.getElementById("toastIcon");
+    document.getElementById("toastMsg").textContent = msg;
+    icon.className = isError
+      ? "fa-solid fa-circle-exclamation text-rose-400"
+      : "fa-solid fa-circle-check text-emerald-400";
+    t.classList.remove("hidden");
+    setTimeout(() => t.classList.add("hidden"), 3200);
+  }
+
+  /******************************************************************
+   * 3. PENYIMPANAN STATE PERMANEN
+   ******************************************************************/
+  function loadLocalState() {
+    const saved = localStorage.getItem(STORAGE_KEYS.STATE);
+    const alreadySeeded = localStorage.getItem(STORAGE_KEYS.SEEDED_FLAG);
+
+    if (saved !== null) {
+      try {
+        const parsed = JSON.parse(saved);
+        state = {
+          updatedAt: Number(parsed.updatedAt || Date.now()),
+          karyawan: Array.isArray(parsed.karyawan) ? parsed.karyawan : [],
+          absensi: Array.isArray(parsed.absensi) ? parsed.absensi : [],
+          kasbon: Array.isArray(parsed.kasbon) ? parsed.kasbon : []
+        };
+        localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
+        return;
+      } catch (e) {
+        console.warn("Gagal membaca state lokal:", e);
+      }
+    }
+
+    if (!alreadySeeded) {
+      state = JSON.parse(JSON.stringify(INITIAL_DUMMY_STATE));
+      state.updatedAt = Date.now();
+      localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
+      localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
+    } else {
+      state = { updatedAt: Date.now(), karyawan: [], absensi: [], kasbon: [] };
+      localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
+    }
+  }
+
+  function saveLocalState(syncAction = null, syncPayload = null) {
+    state.updatedAt = Date.now();
+    localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
+    localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
+    updateHeaderStats();
+    syncToCloud(syncAction, syncPayload);
+  }
+
+  function formatRp(num) {
+    return "Rp " + Number(num || 0).toLocaleString("id-ID");
+  }
+
+  function togglePinVisibility() {
+    const inp = document.getElementById("loginPin");
+    const icon = document.getElementById("pinEyeIcon");
+    if (inp.type === "password") {
+      inp.type = "text";
+      icon.className = "fa-regular fa-eye-slash text-sm";
+    } else {
+      inp.type = "password";
+      icon.className = "fa-regular fa-eye text-sm";
+    }
+  }
+
+  /******************************************************************
+   * 4. UTILITAS & FIREBASE AUTHENTICATION + CLOUD FIRESTORE USERS
+   ******************************************************************/
+  function toAuthEmail(identifier) {
+    const clean = String(identifier || "").trim().toLowerCase();
+    if (clean.includes("@")) return clean;
+    const sanitized = clean.replace(/[^a-z0-9._-]/g, "");
+    return `${sanitized}@workforce.app`;
+  }
+
+  function toAuthPassword(pin) {
+    const raw = String(pin || "").trim();
+    return raw.length >= 6 ? raw : `WF#PIN#${raw}`;
+  }
+
+  function getCloudConfig() {
+    const encoded = localStorage.getItem(STORAGE_KEYS.CLOUD_CFG);
+    if (encoded) {
+      try { return { ...DEFAULT_CLOUD_CONFIG, ...JSON.parse(atob(encoded)) }; } catch (e) {}
+    }
+    return DEFAULT_CLOUD_CONFIG;
+  }
+
+  function getSystemAccounts() {
+    const cfg = getCloudConfig();
+    return {
+      admin:  { id: "SYS_ADMIN",  username: "admin",  pin: cfg.adminPin || "1234",  name: "Administrator Utama", role: "admin" },
+      mandor: { id: "SYS_MANDOR", username: "mandor", pin: cfg.mandorPin || "1234", name: "Mandor Lapangan",     role: "mandor" }
+    };
+  }
+
+  // Ekstrak otomatis dari snippet firebaseConfig yang ditempel user
+  function parseFirebaseConfigSnippet() {
+    const raw = document.getElementById("rawFirebaseSnippet").value;
+    if (!raw.trim()) {
+      showToast("Tempel kode firebaseConfig terlebih dahulu!", true);
+      return;
+    }
+
+    const apiKeyMatch = raw.match(/apiKey\s*:\s*["']([^"']+)["']/);
+    const projectIdMatch = raw.match(/projectId\s*:\s*["']([^"']+)["']/);
+    const dbUrlMatch = raw.match(/databaseURL\s*:\s*["']([^"']+)["']/);
+
+    let extracted = 0;
+    if (apiKeyMatch && apiKeyMatch[1]) {
+      document.getElementById("cfgFirebaseApiKey").value = apiKeyMatch[1].trim();
+      extracted++;
+    }
+    if (projectIdMatch && projectIdMatch[1]) {
+      document.getElementById("cfgFirestoreProjectId").value = projectIdMatch[1].trim();
+      extracted++;
+    }
+    if (dbUrlMatch && dbUrlMatch[1]) {
+      document.getElementById("cfgFirebaseUrl").value = dbUrlMatch[1].trim();
+      extracted++;
+    }
+
+    if (extracted > 0) {
+      showToast("Berhasil mengekstrak API Key & Project ID Firestore!");
+    } else {
+      showToast("Format tidak dikenali, pastikan ada apiKey dan projectId.", true);
+    }
+  }
+
+  async function firebaseSignInOrRegister(identifier, pin, localMatchedProfile) {
+    const cfg = getCloudConfig();
+    if (!cfg.firebaseApiKey) return null;
+
+    const email = toAuthEmail(identifier);
+    const password = toAuthPassword(pin);
+
+    const signInUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${cfg.firebaseApiKey}`;
+    let res = await fetch(signInUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    });
+    let data = await res.json();
+
+    if (data.error && localMatchedProfile) {
+      const signUpUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${cfg.firebaseApiKey}`;
+      res = await fetch(signUpUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, returnSecureToken: true })
+      });
+      data = await res.json();
+    }
+
+    if (data.idToken && data.localId) {
+      // Simpan profil user ke Cloud Firestore (koleksi `users/{uid}`)
+      if (cfg.firestoreProjectId && localMatchedProfile) {
+        try {
+          const fsUserUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.firestoreProjectId)}/databases/(default)/documents/users/${encodeURIComponent(data.localId)}?key=${encodeURIComponent(cfg.firebaseApiKey)}`;
+          await fetch(fsUserUrl, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${data.idToken}`
+            },
+            body: JSON.stringify({
+              fields: {
+                uid: { stringValue: String(data.localId) },
+                id: { stringValue: String(localMatchedProfile.id) },
+                name: { stringValue: String(localMatchedProfile.name) },
+                role: { stringValue: String(localMatchedProfile.role) },
+                identifier: { stringValue: String(identifier) },
+                updatedAt: { stringValue: new Date().toISOString() }
+              }
+            })
+          });
+        } catch (e) {}
+      }
+
+      // Simpan juga ke Realtime Database jika URL diisi
+      if (cfg.firebaseDbUrl && localMatchedProfile) {
+        try {
+          await fetch(`${cfg.firebaseDbUrl}/users/${data.localId}.json?auth=${data.idToken}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uid: data.localId,
+              id: localMatchedProfile.id,
+              name: localMatchedProfile.name,
+              role: localMatchedProfile.role,
+              identifier: identifier,
+              updatedAt: new Date().toISOString()
+            })
+          });
+        } catch (e) {}
+      }
+
+      return {
+        uid: data.localId,
+        idToken: data.idToken,
+        refreshToken: data.refreshToken,
+        expiresAt: Date.now() + (Number(data.expiresIn || 3600) * 1000)
+      };
+    }
+
+    if (data.error) {
+      throw new Error(data.error.message || "Gagal autentikasi Firebase");
+    }
+    return null;
+  }
+
+  async function ensureValidIdToken() {
+    if (!currentUser || !currentUser.refreshToken) return null;
+    const cfg = getCloudConfig();
+    if (!cfg.firebaseApiKey) return null;
+
+    if (currentUser.expiresAt && Date.now() < currentUser.expiresAt - 120000) {
+      return currentUser.idToken;
+    }
+
+    try {
+      const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${cfg.firebaseApiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(currentUser.refreshToken)}`
+      });
+      const data = await res.json();
+      if (data.id_token) {
+        currentUser.idToken = data.id_token;
+        currentUser.refreshToken = data.refresh_token;
+        currentUser.expiresAt = Date.now() + (Number(data.expires_in || 3600) * 1000);
+        saveSession(currentUser);
+        return currentUser.idToken;
+      }
+    } catch (e) {
+      console.warn("Token refresh gagal, menggunakan sesi lokal:", e);
+    }
+    return currentUser.idToken || null;
+  }
+
+  async function provisionAllUsersToFirebaseAuth() {
+    const cfg = getCloudConfig();
+    if (!cfg.firebaseApiKey) {
+      showToast("Harap isi Firebase Web API Key terlebih dahulu!", true);
+      return;
+    }
+
+    const sys = getSystemAccounts();
+    const accountsToProvision = [
+      { identifier: sys.admin.username, pin: sys.admin.pin, profile: sys.admin },
+      { identifier: sys.mandor.username, pin: sys.mandor.pin, profile: sys.mandor },
+      ...state.karyawan.map(k => ({
+        identifier: k.hp,
+        pin: k.pin || "1111",
+        profile: { id: k.id, name: k.nama, role: "karyawan" }
+      }))
+    ];
+
+    showToast("Mendaftarkan akun ke Firebase Auth & Firestore...");
+    let successCount = 0;
+    for (const acc of accountsToProvision) {
+      try {
+        await firebaseSignInOrRegister(acc.identifier, acc.pin, acc.profile);
+        successCount++;
+      } catch (e) {
+        console.warn("Skip/Error:", acc.identifier, e.message);
+      }
+    }
+    showToast(`${successCount} akun berhasil disinkronkan ke Auth & Firestore!`);
+  }
+
+  /******************************************************************
+   * 5. LOGIN UNIVERSAL & PERSISTENSI SESI
+   ******************************************************************/
+  function detectUserProfileLocally(identifier, pin) {
+    const cleanId = String(identifier || "").trim().toLowerCase();
+    const cleanPin = String(pin || "").trim();
+    const sys = getSystemAccounts();
+
+    if ((cleanId === "admin" || cleanId === "admin@workforce.app") && cleanPin === sys.admin.pin) {
+      return { ...sys.admin };
+    }
+
+    if ((cleanId === "mandor" || cleanId === "mandor@workforce.app") && cleanPin === sys.mandor.pin) {
+      return { ...sys.mandor };
+    }
+
+    const emp = state.karyawan.find(k => {
+      const hpMatch = String(k.hp || "").trim().toLowerCase() === cleanId;
+      const idMatch = String(k.id || "").trim().toLowerCase() === cleanId;
+      const emailMatch = toAuthEmail(k.hp) === cleanId;
+      return (hpMatch || idMatch || emailMatch) && String(k.pin || "").trim() === cleanPin;
+    });
+
+    if (emp) {
+      return {
+        id: emp.id,
+        username: emp.hp,
+        name: emp.nama,
+        role: "karyawan",
+        empData: emp
+      };
+    }
+
+    return null;
+  }
+
+  async function handleUniversalLogin(e) {
+    e.preventDefault();
+    const identifier = document.getElementById("loginIdentifier").value.trim();
+    const pin = document.getElementById("loginPin").value.trim();
+    const btn = document.getElementById("btnSubmitLogin");
+
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Memverifikasi Akun...`;
+
+    try {
+      let profile = detectUserProfileLocally(identifier, pin);
+      const cfg = getCloudConfig();
+
+      if (cfg.firebaseApiKey && (cfg.firestoreProjectId || cfg.firebaseDbUrl)) {
+        try {
+          const authData = await firebaseSignInOrRegister(identifier, pin, profile);
+          if (authData) {
+            if (!profile && cfg.firestoreProjectId) {
+              const fsUserUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.firestoreProjectId)}/databases/(default)/documents/users/${encodeURIComponent(authData.uid)}?key=${encodeURIComponent(cfg.firebaseApiKey)}`;
+              const userRes = await fetch(fsUserUrl, {
+                headers: { "Authorization": `Bearer ${authData.idToken}` }
+              });
+              const userDoc = await userRes.json();
+              if (userDoc && userDoc.fields && userDoc.fields.role) {
+                profile = {
+                  id: userDoc.fields.id?.stringValue || authData.uid,
+                  name: userDoc.fields.name?.stringValue || identifier,
+                  role: userDoc.fields.role.stringValue
+                };
+              }
+            }
+            if (profile) {
+              profile = { ...profile, ...authData };
+            }
+          }
+        } catch (authErr) {
+          console.warn("Firebase Auth dilewati, menggunakan verifikasi lokal:", authErr.message);
+        }
+      }
+
+      if (!profile) {
+        showToast("ID Pengguna atau PIN tidak cocok! Periksa kembali.", true);
+        return;
+      }
+
+      currentUser = profile;
+      if (document.getElementById("rememberSession").checked) {
+        saveSession(currentUser);
+      }
+
+      const defaultTab = currentUser.role === "mandor"
+        ? "absensi"
+        : (currentUser.role === "karyawan" ? "gaji" : "karyawan");
+
+      enterApp(defaultTab);
+      showToast(`Selamat datang, ${currentUser.name} (${currentUser.role.toUpperCase()})`);
+    } catch (err) {
+      showToast("Gagal masuk: " + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span>Masuk Sekarang</span><i class="fa-solid fa-arrow-right"></i>`;
+    }
+  }
+
+  function saveSession(userObj) {
+    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(userObj));
+  }
+
+  async function restoreSessionOnLoad() {
+    const rawSession = localStorage.getItem(STORAGE_KEYS.SESSION);
+    if (!rawSession) return;
+
+    try {
+      const savedUser = JSON.parse(rawSession);
+      if (savedUser && savedUser.role) {
+        currentUser = savedUser;
+        const lastTab = localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB) ||
+          (currentUser.role === "mandor" ? "absensi" : (currentUser.role === "karyawan" ? "gaji" : "karyawan"));
+
+        enterApp(lastTab);
+
+        const cfg = getCloudConfig();
+        if (cfg.firestoreProjectId || cfg.firebaseDbUrl) {
+          await ensureValidIdToken();
+          await pullFromFirebase(true);
+        }
+      }
+    } catch (e) {
+      console.warn("Gagal memulihkan sesi:", e);
+    }
+  }
+
+  function enterApp(initialTab = "karyawan") {
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("mainScreen").classList.remove("hidden");
+
+    document.getElementById("userRoleBadge").textContent = currentUser.role.toUpperCase();
+    document.getElementById("activeUserName").textContent = currentUser.name;
+
+    const isAdmin = currentUser.role === "admin";
+    const isKaryawan = currentUser.role === "karyawan";
+
+    document.getElementById("btnAddKaryawan").classList.toggle("hidden", !isAdmin);
+    document.getElementById("btnCloudConfig").classList.toggle("hidden", !isAdmin);
+    document.getElementById("formAbsensiCard").classList.toggle("hidden", isKaryawan);
+    document.getElementById("formKasbonCard").classList.toggle("hidden", isKaryawan);
+
+    document.getElementById("absTanggal").value = todayStr;
+    document.getElementById("massTanggal").value = todayStr;
+    document.getElementById("kasTanggal").value = todayStr;
+    document.getElementById("gajiStartDate").value = firstDayStr;
+    document.getElementById("gajiEndDate").value = todayStr;
+
+    initBulkStateForDate();
+    renderAll();
+    switchTab(initialTab);
+  }
+
+  function handleLogout() {
+    askConfirm(
+      "Keluar dari Sesi?",
+      "Anda akan keluar dari akun saat ini dan kembali ke halaman login.",
+      () => {
+        currentUser = null;
+        localStorage.removeItem(STORAGE_KEYS.SESSION);
+        localStorage.removeItem(STORAGE_KEYS.ACTIVE_TAB);
+        document.getElementById("mainScreen").classList.add("hidden");
+        document.getElementById("loginScreen").classList.remove("hidden");
+      }
+    );
+  }
+
+  function switchTab(tabName) {
+    document.querySelectorAll(".tab-section").forEach(s => s.classList.add("hidden"));
+    const targetSection = document.getElementById(`tab_${tabName}`);
+    if (targetSection) targetSection.classList.remove("hidden");
+
+    document.querySelectorAll(".nav-btn").forEach(b => {
+      b.classList.remove("text-indigo-600");
+      b.classList.add("text-slate-400");
+    });
+    const activeNav = document.getElementById(`nav_${tabName}`);
+    if (activeNav) {
+      activeNav.classList.remove("text-slate-400");
+      activeNav.classList.add("text-indigo-600");
+    }
+
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, tabName);
+  }
+
+  /******************************************************************
+   * 6. SINKRONISASI CLOUD FIRESTORE (UTAMA), REALTIME DB & SHEETS
+   ******************************************************************/
+  function getFirestoreDocUrl(cfg) {
+    const keyParam = cfg.firebaseApiKey ? `?key=${encodeURIComponent(cfg.firebaseApiKey)}` : "";
+    return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(cfg.firestoreProjectId)}/databases/(default)/documents/workforce_pro/main_state${keyParam}`;
+  }
+
+  function saveCloudConfig() {
+    const cfg = {
+      firebaseApiKey: document.getElementById("cfgFirebaseApiKey").value.trim(),
+      firestoreProjectId: document.getElementById("cfgFirestoreProjectId").value.trim(),
+      firebaseDbUrl: document.getElementById("cfgFirebaseUrl").value.trim().replace(/\/$/, ""),
+      gasWebAppUrl: document.getElementById("cfgGasUrl").value.trim(),
+      gasToken: document.getElementById("cfgGasToken").value.trim(),
+      adminPin: document.getElementById("cfgAdminPin").value.trim() || "1234",
+      mandorPin: document.getElementById("cfgMandorPin").value.trim() || "1234"
+    };
+    localStorage.setItem(STORAGE_KEYS.CLOUD_CFG, btoa(JSON.stringify(cfg)));
+    closeModal("modalCloudConfig");
+    showToast("Konfigurasi Cloud Firestore disimpan!");
+    syncToCloud("FULL_SYNC", state);
+  }
+
+  async function testFirestoreConnection() {
+    const apiKey = document.getElementById("cfgFirebaseApiKey").value.trim();
+    const projectId = document.getElementById("cfgFirestoreProjectId").value.trim();
+
+    if (!projectId) {
+      showToast("Masukkan Cloud Firestore Project ID terlebih dahulu!", true);
+      return;
+    }
+
+    showToast("Menguji koneksi ke Cloud Firestore...");
+    try {
+      const idToken = await ensureValidIdToken();
+      const headers = { "Content-Type": "application/json" };
+      if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+
+      const testUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/workforce_pro/main_state${apiKey ? `?key=${encodeURIComponent(apiKey)}` : ""}`;
+      const res = await fetch(testUrl, { method: "GET", headers });
+
+      if (res.ok || res.status === 404) {
+        // Status 200 (dokumen ada) atau 404 (database aktif namun dokumen belum dibuat) berarti koneksi sukses!
+        showToast("Koneksi Cloud Firestore BERHASIL & siap digunakan!");
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData.error?.message || `HTTP ${res.status}`;
+        showToast(`Gagal akses Firestore: ${msg}`, true);
+      }
+    } catch (err) {
+      showToast("Gagal terhubung ke Firestore: Periksa koneksi / Project ID", true);
+    }
+  }
+
+  async function syncToCloud(action, payload) {
+    const cfg = getCloudConfig();
+    const badge = document.getElementById("cloudStatusBadge");
+
+    // 1. SINKRONISASI KE CLOUD FIRESTORE (JIKA PROJECT ID DIISI)
+    if (cfg.firestoreProjectId) {
+      try {
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Sync Firestore...`;
+        const idToken = await ensureValidIdToken();
+        const headers = { "Content-Type": "application/json" };
+        if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+
+        const firestorePayload = {
+          fields: {
+            updatedAt: { integerValue: String(state.updatedAt || Date.now()) },
+            totalKaryawan: { integerValue: String(state.karyawan.length) },
+            totalAbsensi: { integerValue: String(state.absensi.length) },
+            totalKasbon: { integerValue: String(state.kasbon.length) },
+            karyawanJson: { stringValue: JSON.stringify(state.karyawan) },
+            absensiJson: { stringValue: JSON.stringify(state.absensi) },
+            kasbonJson: { stringValue: JSON.stringify(state.kasbon) },
+            lastAction: { stringValue: String(action || "SYNC") },
+            updatedBy: { stringValue: String(currentUser ? currentUser.name : "System") }
+          }
+        };
+
+        const res = await fetch(getFirestoreDocUrl(cfg), {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify(firestorePayload)
+        });
+
+        if (!res.ok) throw new Error("Firestore HTTP " + res.status);
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Firestore Aktif`;
+      } catch (err) {
+        console.warn("Firestore sync error:", err);
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Mode Lokal`;
+      }
+    }
+    // 2. FALLBACK KE REALTIME DATABASE (JIKA URL RTDB DIISI)
+    else if (cfg.firebaseDbUrl) {
+      try {
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Syncing...`;
+        const idToken = await ensureValidIdToken();
+        const authQuery = idToken ? `?auth=${encodeURIComponent(idToken)}` : "";
+        const res = await fetch(`${cfg.firebaseDbUrl}/workforce_data.json${authQuery}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            karyawan: state.karyawan,
+            absensi: state.absensi,
+            kasbon: state.kasbon,
+            updatedAt: state.updatedAt || Date.now()
+          })
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Terlindungi UID`;
+      } catch (err) {
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Mode Lokal`;
+      }
+    }
+
+    // 3. SINKRONISASI KE GOOGLE SHEETS (JIKA DIISI)
+    if (cfg.gasWebAppUrl && action) {
+      try {
+        await fetch(cfg.gasWebAppUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            token: cfg.gasToken,
+            action: action,
+            payload: payload,
+            fullState: state,
+            timestamp: new Date().toISOString()
+          })
+        });
+      } catch (err) {
+        console.warn("GAS Sync tertunda:", err);
+      }
+    }
+  }
+
+  async function pullFromFirebase(silent = false) {
+    const cfg = getCloudConfig();
+    if (!cfg.firestoreProjectId && !cfg.firebaseDbUrl) {
+      if (!silent) showToast("Isi Cloud Firestore Project ID terlebih dahulu!", true);
+      return;
+    }
+
+    // 1. TARIK DARI CLOUD FIRESTORE
+    if (cfg.firestoreProjectId) {
+      try {
+        const idToken = await ensureValidIdToken();
+        const headers = {};
+        if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+
+        const res = await fetch(getFirestoreDocUrl(cfg), { method: "GET", headers });
+        if (res.status === 404) {
+          // Dokumen belum ada di Firestore, unggah state lokal saat ini
+          await syncToCloud("INITIAL_FIRESTORE_SEED", state);
+          if (!silent) showToast("Dokumen Firestore baru berhasil diinisialisasi!");
+          return;
+        }
+        if (!res.ok) throw new Error("Firestore HTTP " + res.status);
+
+        const doc = await res.json();
+        if (doc && doc.fields) {
+          const f = doc.fields;
+          const cloudUpdated = Number(f.updatedAt?.integerValue || 0);
+          const localUpdated = Number(state.updatedAt || 0);
+
+          if (!silent || cloudUpdated >= localUpdated) {
+            state.karyawan = f.karyawanJson?.stringValue ? JSON.parse(f.karyawanJson.stringValue) : [];
+            state.absensi = f.absensiJson?.stringValue ? JSON.parse(f.absensiJson.stringValue) : [];
+            state.kasbon = f.kasbonJson?.stringValue ? JSON.parse(f.kasbonJson.stringValue) : [];
+            state.updatedAt = cloudUpdated || Date.now();
+
+            localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
+            localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
+            initBulkStateForDate();
+            renderAll();
+          }
+          document.getElementById("cloudStatusBadge").innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Firestore Aktif`;
+          if (!silent) showToast("Data berhasil ditarik dari Cloud Firestore!");
+        }
+        return;
+      } catch (e) {
+        if (!silent) showToast("Gagal menarik dari Firestore: Periksa Project ID & Rules.", true);
+        return;
+      }
+    }
+
+    // 2. FALLBACK TARIK DARI REALTIME DATABASE
+    if (cfg.firebaseDbUrl) {
+      try {
+        const idToken = await ensureValidIdToken();
+        const authQuery = idToken ? `?auth=${encodeURIComponent(idToken)}` : "";
+        const res = await fetch(`${cfg.firebaseDbUrl}/workforce_data.json${authQuery}`);
+        if (!res.ok) throw new Error("Akses ditolak / Offline");
+        const data = await res.json();
+
+        if (data) {
+          const cloudUpdated = Number(data.updatedAt || 0);
+          const localUpdated = Number(state.updatedAt || 0);
+
+          if (!silent || cloudUpdated >= localUpdated) {
+            state.karyawan = Array.isArray(data.karyawan) ? data.karyawan : [];
+            state.absensi = Array.isArray(data.absensi) ? data.absensi : [];
+            state.kasbon = Array.isArray(data.kasbon) ? data.kasbon : [];
+            state.updatedAt = cloudUpdated || Date.now();
+            localStorage.setItem(STORAGE_KEYS.SEEDED_FLAG, "true");
+            localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
+            initBulkStateForDate();
+            renderAll();
+          }
+          if (!silent) showToast("Data berhasil disinkronkan dari Firebase!");
+        }
+      } catch (e) {
+        if (!silent) showToast("Gagal menarik data: Periksa pengaturan Cloud.", true);
+      }
+    }
+  }
+
+  /******************************************************************
+   * 7. RENDER & CRUD: DAFTAR KARYAWAN
+   ******************************************************************/
+  function renderKaryawan() {
+    const listEl = document.getElementById("karyawanList");
+    const isAdmin = currentUser.role === "admin";
+    const data = currentUser.role === "karyawan"
+      ? state.karyawan.filter(k => k.id === currentUser.id)
+      : state.karyawan;
+
+    const opts = state.karyawan.length > 0
+      ? state.karyawan.map(k => `<option value="${k.id}">${k.nama}</option>`).join("")
+      : `<option value="">-- Belum Ada Karyawan --</option>`;
+    document.getElementById("absKaryawanId").innerHTML = opts;
+    document.getElementById("kasKaryawanId").innerHTML = opts;
+    updateAbsPreview();
+
+    if (data.length === 0) {
+      listEl.innerHTML = `
+        <div class="bg-white rounded-2xl p-6 text-center space-y-2 border border-dashed border-slate-300">
+          <i class="fa-solid fa-users-slash text-2xl text-slate-300"></i>
+          <p class="text-xs font-bold text-slate-500">Belum ada data karyawan.</p>
+          <p class="text-[11px] text-slate-400">Klik tombol <b>+ Tambah</b> di kanan atas untuk menambahkan karyawan baru.</p>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = data.map(k => `
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col gap-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 font-extrabold flex items-center justify-center text-sm shrink-0">
+              ${k.nama.charAt(0).toUpperCase()}
+            </div>
+            <div class="min-w-0">
+              <h4 class="text-sm font-extrabold text-slate-800 truncate">${k.nama}</h4>
+              <p class="text-[11px] text-slate-500 truncate"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${k.alamat}</p>
+              <p class="text-[11px] text-slate-500">
+                <i class="fa-solid fa-key mr-1 text-indigo-500"></i>ID Login: <b>${k.hp}</b> ${isAdmin ? `(PIN: ${k.pin || '1111'})` : ''}
+              </p>
+            </div>
+          </div>
+          ${isAdmin ? `
+            <div class="flex gap-1.5 shrink-0">
+              <button type="button" onclick="openKaryawanModal('${k.id}')" title="Edit Karyawan" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 text-xs flex items-center justify-center">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button type="button" onclick="deleteKaryawan('${k.id}')" title="Hapus Permanen" class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs flex items-center justify-center">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          ` : ``}
+        </div>
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+          <div class="bg-slate-50 rounded-xl p-2">
+            <span class="text-[10px] text-slate-400 block">Gaji Harian Full</span>
+            <span class="font-extrabold text-indigo-600">${formatRp(k.gajiHarian)}/hari</span>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-2">
+            <span class="text-[10px] text-slate-400 block">Ongkos Lembur</span>
+            <span class="font-extrabold text-emerald-600">${formatRp(k.lemburJam)}/jam</span>
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function openKaryawanModal(id = null) {
+    document.getElementById("modalKaryawan").classList.remove("hidden");
+    if (id) {
+      const k = state.karyawan.find(x => x.id === id);
+      if (!k) return;
+      document.getElementById("modalKaryawanTitle").textContent = "Edit Data Karyawan";
+      document.getElementById("empId").value = k.id;
+      document.getElementById("empNama").value = k.nama;
+      document.getElementById("empAlamat").value = k.alamat;
+      document.getElementById("empHp").value = k.hp;
+      document.getElementById("empPin").value = k.pin || "1111";
+      document.getElementById("empGajiHarian").value = k.gajiHarian;
+      document.getElementById("empLemburJam").value = k.lemburJam;
+    } else {
+      document.getElementById("modalKaryawanTitle").textContent = "Tambah Karyawan Baru";
+      document.getElementById("empId").value = "";
+      document.getElementById("empNama").value = "";
+      document.getElementById("empAlamat").value = "";
+      document.getElementById("empHp").value = "";
+      document.getElementById("empPin").value = "1111";
+      document.getElementById("empGajiHarian").value = "";
+      document.getElementById("empLemburJam").value = "";
+    }
+  }
+
+  async function saveKaryawan(e) {
+    e.preventDefault();
+    const id = document.getElementById("empId").value || "EMP" + Date.now().toString().slice(-5);
+    const payload = {
+      id,
+      nama: document.getElementById("empNama").value.trim(),
+      alamat: document.getElementById("empAlamat").value.trim(),
+      hp: document.getElementById("empHp").value.trim(),
+      pin: document.getElementById("empPin").value.trim(),
+      gajiHarian: Number(document.getElementById("empGajiHarian").value),
+      lemburJam: Number(document.getElementById("empLemburJam").value)
+    };
+
+    const idx = state.karyawan.findIndex(k => k.id === id);
+    if (idx >= 0) state.karyawan[idx] = payload;
+    else state.karyawan.push(payload);
+
+    saveLocalState("UPSERT_KARYAWAN", payload);
+    closeModal("modalKaryawan");
+    initBulkStateForDate();
+    renderAll();
+    showToast("Data karyawan disimpan!");
+  }
+
+  function deleteKaryawan(id) {
+    const target = state.karyawan.find(k => k.id === id);
+    const nama = target ? target.nama : "karyawan ini";
+
+    askConfirm(
+      `Hapus ${nama}?`,
+      `Data profil, riwayat absensi, dan kasbon milik ${nama} akan dihapus permanen dan tidak muncul kembali.`,
+      () => {
+        state.karyawan = state.karyawan.filter(k => k.id !== id);
+        state.absensi = state.absensi.filter(a => a.karyawanId !== id);
+        state.kasbon = state.kasbon.filter(k => k.karyawanId !== id);
+        delete bulkDraft[id];
+
+        saveLocalState("DELETE_KARYAWAN", { id });
+        initBulkStateForDate();
+        renderAll();
+        showToast(`Data ${nama} berhasil dihapus permanen!`);
+      }
+    );
+  }
+
+  /******************************************************************
+   * 8. INPUT ABSENSI MASSAL (NAMA KARYAWAN JELAS & LEBAR PENUH)
+   ******************************************************************/
+  function switchAbsMode(mode) {
+    absInputMode = mode;
+    const isMassal = mode === "MASSAL";
+
+    document.getElementById("panelAbsMassal").classList.toggle("hidden", !isMassal);
+    document.getElementById("panelAbsSatuan").classList.toggle("hidden", isMassal);
+
+    document.getElementById("btnModeMassal").className = isMassal
+      ? "py-2 rounded-xl text-xs font-extrabold bg-white text-indigo-600 shadow-sm transition"
+      : "py-2 rounded-xl text-xs font-bold text-slate-600 transition";
+
+    document.getElementById("btnModeSatuan").className = !isMassal
+      ? "py-2 rounded-xl text-xs font-extrabold bg-white text-indigo-600 shadow-sm transition"
+      : "py-2 rounded-xl text-xs font-bold text-slate-600 transition";
+
+    if (isMassal) renderBulkChecklist();
+  }
+
+  function initBulkStateForDate() {
+    const selectedDate = document.getElementById("massTanggal")?.value || todayStr;
+    bulkDraft = {};
+
+    state.karyawan.forEach(emp => {
+      const existing = state.absensi.find(a => a.tanggal === selectedDate && a.karyawanId === emp.id);
+      if (existing) {
+        bulkDraft[emp.id] = {
+          checked: true,
+          tipe: existing.tipe,
+          jamLembur: Number(existing.jamLembur || 0),
+          alreadySaved: true
+        };
+      } else {
+        bulkDraft[emp.id] = {
+          checked: true,
+          tipe: "FULL",
+          jamLembur: 0,
+          alreadySaved: false
+        };
+      }
+    });
+    renderBulkChecklist();
+  }
+
+  function renderBulkChecklist() {
+    const container = document.getElementById("massEmployeeList");
+    if (!container) return;
+
+    if (state.karyawan.length === 0) {
+      container.innerHTML = `
+        <div class="p-5 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-300 text-xs text-slate-500">
+          Belum ada karyawan terdaftar. Tambahkan karyawan di menu <b>Karyawan</b> terlebih dahulu.
+        </div>
+      `;
+      document.getElementById("massSelectedCountBadge").textContent = "0 / 0 Dipilih";
+      document.getElementById("massSummaryCount").textContent = "0";
+      document.getElementById("massEstimasiTotal").textContent = "Rp 0";
+      return;
+    }
+
+    let selectedCount = 0;
+    let totalEstimasi = 0;
+
+    container.innerHTML = state.karyawan.map((emp, index) => {
+      if (!bulkDraft[emp.id]) {
+        bulkDraft[emp.id] = { checked: true, tipe: "FULL", jamLembur: 0, alreadySaved: false };
+      }
+      const item = bulkDraft[emp.id];
+      const faktor = item.tipe === "FULL" ? 1 : (item.tipe === "HALF" ? 0.5 : 0);
+      const upahHarian = emp.gajiHarian * faktor;
+      const upahLembur = emp.lemburJam * item.jamLembur;
+      const subtotal = upahHarian + upahLembur;
+
+      if (item.checked) {
+        selectedCount++;
+        totalEstimasi += subtotal;
+      }
+
+      return `
+        <div class="rounded-2xl p-3.5 border-2 transition ${item.checked ? 'bg-white border-indigo-500/80 shadow-sm' : 'bg-slate-100/80 border-slate-200'}">
+          <!-- Baris 1: Checkbox + Nomor + Nama Karyawan Jelas & Penuh + Estimasi Upah -->
+          <div class="flex items-start justify-between gap-2.5 pb-2.5 border-b border-slate-100">
+            <label class="flex items-start gap-2.5 cursor-pointer flex-1">
+              <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleBulkEmp('${emp.id}', this.checked)"
+                class="w-5 h-5 mt-0.5 rounded-md text-indigo-600 focus:ring-0 cursor-pointer shrink-0" />
+              <div class="flex-1">
+                <div class="flex items-center flex-wrap gap-1.5">
+                  <span class="text-sm font-extrabold ${item.checked ? 'text-slate-900' : 'text-slate-600'} leading-snug break-words">
+                    ${index + 1}. ${emp.nama}
+                  </span>
+                  ${item.alreadySaved ? `
+                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
+                      <i class="fa-solid fa-check mr-0.5"></i>Tersimpan
+                    </span>
+                  ` : ``}
+                </div>
+                <p class="text-[11px] font-semibold text-slate-500 mt-0.5">
+                  Gaji Harian: <b class="text-slate-700">${formatRp(emp.gajiHarian)}</b> • Lembur: <b class="text-slate-700">${formatRp(emp.lemburJam)}/jam</b>
+                </p>
+              </div>
+            </label>
+
+            <div class="text-right shrink-0">
+              <span class="text-[10px] font-bold text-slate-400 block">Total Hari Ini</span>
+              <span class="text-xs font-extrabold ${item.checked ? 'text-indigo-600' : 'text-slate-400'}">${formatRp(subtotal)}</span>
+            </div>
+          </div>
+
+          <!-- Baris 2: Pilihan Kehadiran 3 Kolom Jelas -->
+          <div class="grid grid-cols-3 gap-1.5 my-2.5">
+            <button type="button" onclick="setBulkEmpTipe('${emp.id}', 'FULL')"
+              class="py-2 px-2 rounded-xl text-[11px] font-extrabold border transition flex items-center justify-center gap-1 ${item.tipe === 'FULL' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+              <i class="fa-solid fa-circle-check"></i> Harian Full
+            </button>
+            <button type="button" onclick="setBulkEmpTipe('${emp.id}', 'HALF')"
+              class="py-2 px-2 rounded-xl text-[11px] font-extrabold border transition flex items-center justify-center gap-1 ${item.tipe === 'HALF' ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+              <i class="fa-solid fa-circle-half-stroke"></i> 1/2 Hari
+            </button>
+            <button type="button" onclick="setBulkEmpTipe('${emp.id}', 'LEMBUR_SAJA')"
+              class="py-2 px-2 rounded-xl text-[11px] font-extrabold border transition flex items-center justify-center gap-1 ${item.tipe === 'LEMBUR_SAJA' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+              <i class="fa-solid fa-clock"></i> Lembur Saja
+            </button>
+          </div>
+
+          <!-- Baris 3: Pengatur Jam Lembur -->
+          <div class="flex items-center justify-between pt-1.5 text-xs bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/70">
+            <span class="text-slate-600 font-bold text-[11px]">Tambahan Jam Lembur:</span>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="stepBulkEmpLembur('${emp.id}', -0.5)" class="w-7 h-7 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-extrabold flex items-center justify-center shadow-sm">-</button>
+              <span class="w-14 text-center font-extrabold text-emerald-700 text-xs">${item.jamLembur} Jam</span>
+              <button type="button" onclick="stepBulkEmpLembur('${emp.id}', 0.5)" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold flex items-center justify-center shadow-sm">+</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    document.getElementById("massSelectedCountBadge").textContent = `${selectedCount} / ${state.karyawan.length} Dipilih`;
+    document.getElementById("massSummaryCount").textContent = selectedCount;
+    document.getElementById("massEstimasiTotal").textContent = formatRp(totalEstimasi);
+
+    const allChecked = selectedCount === state.karyawan.length && state.karyawan.length > 0;
+    document.getElementById("labelCheckAll").textContent = allChecked ? "Batal Pilih Semua" : "Centang Semua";
+  }
+
+  function toggleBulkEmp(empId, isChecked) {
+    if (bulkDraft[empId]) {
+      bulkDraft[empId].checked = isChecked;
+      renderBulkChecklist();
+    }
+  }
+
+  function setBulkEmpTipe(empId, tipe) {
+    if (bulkDraft[empId]) {
+      bulkDraft[empId].checked = true;
+      bulkDraft[empId].tipe = tipe;
+      renderBulkChecklist();
+    }
+  }
+
+  function stepBulkEmpLembur(empId, delta) {
+    if (bulkDraft[empId]) {
+      bulkDraft[empId].checked = true;
+      bulkDraft[empId].jamLembur = Math.max(0, Number(bulkDraft[empId].jamLembur || 0) + delta);
+      renderBulkChecklist();
+    }
+  }
+
+  function toggleMassSelectAll() {
+    const allChecked = state.karyawan.every(emp => bulkDraft[emp.id]?.checked);
+    const targetState = !allChecked;
+    state.karyawan.forEach(emp => {
+      if (bulkDraft[emp.id]) bulkDraft[emp.id].checked = targetState;
+    });
+    renderBulkChecklist();
+  }
+
+  function setMassTipeAll(tipe) {
+    state.karyawan.forEach(emp => {
+      if (bulkDraft[emp.id] && bulkDraft[emp.id].checked) {
+        bulkDraft[emp.id].tipe = tipe;
+      }
+    });
+    renderBulkChecklist();
+    showToast(`Semua karyawan terpilih diset ke: ${tipe}`);
+  }
+
+  function adjustMassLemburAll(hours, isReset = false) {
+    state.karyawan.forEach(emp => {
+      if (bulkDraft[emp.id] && bulkDraft[emp.id].checked) {
+        bulkDraft[emp.id].jamLembur = isReset ? 0 : (Number(bulkDraft[emp.id].jamLembur || 0) + hours);
+      }
+    });
+    renderBulkChecklist();
+  }
+
+  function saveMassAbsensi() {
+    const tanggal = document.getElementById("massTanggal").value || todayStr;
+    const catatanMassal = document.getElementById("massCatatan").value.trim();
+
+    const selectedEmps = state.karyawan.filter(emp => bulkDraft[emp.id]?.checked);
+    if (selectedEmps.length === 0) {
+      showToast("Pilih minimal 1 karyawan pada daftar checklist!", true);
+      return;
+    }
+
+    const savedRecords = [];
+
+    selectedEmps.forEach((emp, idx) => {
+      const draft = bulkDraft[emp.id];
+      const faktor = draft.tipe === "FULL" ? 1 : (draft.tipe === "HALF" ? 0.5 : 0);
+      const upahHarian = emp.gajiHarian * faktor;
+      const upahLembur = emp.lemburJam * draft.jamLembur;
+
+      const existingIdx = state.absensi.findIndex(a => a.tanggal === tanggal && a.karyawanId === emp.id);
+
+      const record = {
+        id: existingIdx >= 0 ? state.absensi[existingIdx].id : ("ABS" + Date.now().toString().slice(-5) + idx),
+        tanggal,
+        karyawanId: emp.id,
+        namaKaryawan: emp.nama,
+        tipe: draft.tipe,
+        jamLembur: draft.jamLembur,
+        catatan: catatanMassal || (existingIdx >= 0 ? state.absensi[existingIdx].catatan : ""),
+        upahHarian,
+        upahLembur,
+        totalUpah: upahHarian + upahLembur,
+        inputOleh: currentUser ? currentUser.name : "Mandor"
+      };
+
+      if (existingIdx >= 0) {
+        state.absensi[existingIdx] = record;
+      } else {
+        state.absensi.unshift(record);
+      }
+
+      savedRecords.push(record);
+    });
+
+    saveLocalState("ADD_ABSENSI_MASSAL", savedRecords);
+    initBulkStateForDate();
+    renderAll();
+    showToast(`${savedRecords.length} absensi karyawan berhasil disimpan!`);
+  }
+
+  function getSelectedAbsTipe() {
+    const el = document.querySelector('input[name="absTipe"]:checked');
+    return el ? el.value : "FULL";
+  }
+
+  function updateAbsPreview() {
+    const empId = document.getElementById("absKaryawanId").value;
+    const emp = state.karyawan.find(k => k.id === empId);
+    if (!emp) {
+      document.getElementById("absEstimasiUpah").textContent = "Rp 0";
+      return;
+    }
+
+    const tipe = getSelectedAbsTipe();
+    const jamLembur = Number(document.getElementById("absJamLembur").value || 0);
+    const faktorHarian = tipe === "FULL" ? 1 : (tipe === "HALF" ? 0.5 : 0);
+
+    const upahHarian = emp.gajiHarian * faktorHarian;
+    const upahLembur = emp.lemburJam * jamLembur;
+    document.getElementById("absEstimasiUpah").textContent = formatRp(upahHarian + upahLembur);
+  }
+
+  function saveAbsensi(e) {
+    e.preventDefault();
+    const tanggal = document.getElementById("absTanggal").value;
+    const karyawanId = document.getElementById("absKaryawanId").value;
+    const tipe = getSelectedAbsTipe();
+    const jamLembur = Number(document.getElementById("absJamLembur").value || 0);
+    const catatan = document.getElementById("absCatatan").value.trim();
+
+    const emp = state.karyawan.find(k => k.id === karyawanId);
+    if (!emp) {
+      showToast("Pilih karyawan terlebih dahulu!", true);
+      return;
+    }
+
+    const faktor = tipe === "FULL" ? 1 : (tipe === "HALF" ? 0.5 : 0);
+    const upahHarian = emp.gajiHarian * faktor;
+    const upahLembur = emp.lemburJam * jamLembur;
+
+    const existingIdx = state.absensi.findIndex(a => a.tanggal === tanggal && a.karyawanId === karyawanId);
+
+    const record = {
+      id: existingIdx >= 0 ? state.absensi[existingIdx].id : ("ABS" + Date.now().toString().slice(-6)),
+      tanggal,
+      karyawanId,
+      namaKaryawan: emp.nama,
+      tipe,
+      jamLembur,
+      catatan,
+      upahHarian,
+      upahLembur,
+      totalUpah: upahHarian + upahLembur,
+      inputOleh: currentUser.name
+    };
+
+    if (existingIdx >= 0) {
+      state.absensi[existingIdx] = record;
+    } else {
+      state.absensi.unshift(record);
+    }
+
+    document.getElementById("absJamLembur").value = 0;
+    document.getElementById("absCatatan").value = "";
+    updateAbsPreview();
+
+    saveLocalState("ADD_ABSENSI", record);
+    initBulkStateForDate();
+    renderAll();
+    showToast("Absensi berhasil dicatat!");
+  }
+
+  function renderAbsensi() {
+    const listEl = document.getElementById("absensiList");
+    const filterDate = document.getElementById("filterAbsTanggal").value;
+
+    let rows = state.absensi;
+    if (currentUser.role === "karyawan") {
+      rows = rows.filter(a => a.karyawanId === currentUser.id);
+    }
+    if (filterDate) {
+      rows = rows.filter(a => a.tanggal === filterDate);
+    }
+
+    if (rows.length === 0) {
+      listEl.innerHTML = `<div class="bg-white rounded-2xl p-5 text-center text-xs text-slate-400">Belum ada data absensi.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = rows.map(a => {
+      const emp = state.karyawan.find(k => k.id === a.karyawanId);
+      const nama = emp ? emp.nama : (a.namaKaryawan || "Karyawan");
+      const badgeMap = {
+        FULL: `<span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[10px] font-bold">Harian Full (1.0)</span>`,
+        HALF: `<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[10px] font-bold">Setengah Hari (0.5)</span>`,
+        LEMBUR_SAJA: `<span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-bold">Lembur Jam-an</span>`
+      };
+      return `
+        <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 flex items-center justify-between gap-2">
+          <div class="space-y-1 min-w-0">
+            <div class="flex items-center flex-wrap gap-1.5">
+              <span class="text-xs font-extrabold text-slate-800">${nama}</span>
+              ${badgeMap[a.tipe] || ""}
+            </div>
+            <p class="text-[11px] text-slate-500">
+              <i class="fa-regular fa-calendar mr-1"></i>${a.tanggal}
+              ${a.jamLembur > 0 ? ` • <span class="text-emerald-600 font-semibold">+${a.jamLembur} Jam Lembur</span>` : ``}
+              ${a.catatan ? ` • ${a.catatan}` : ``}
+            </p>
+          </div>
+          <div class="text-right flex items-center gap-2 shrink-0">
+            <div>
+              <p class="text-xs font-extrabold text-slate-800">${formatRp(a.totalUpah)}</p>
+              <p class="text-[10px] text-slate-400">Total Hari Itu</p>
+            </div>
+            ${currentUser.role !== "karyawan" ? `
+              <button type="button" onclick="deleteAbsensi('${a.id}')" class="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs flex items-center justify-center">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            ` : ``}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function deleteAbsensi(id) {
+    askConfirm(
+      "Hapus Catatan Absensi?",
+      "Data kehadiran ini akan dihapus secara permanen.",
+      () => {
+        state.absensi = state.absensi.filter(a => a.id !== id);
+        saveLocalState("DELETE_ABSENSI", { id });
+        initBulkStateForDate();
+        renderAll();
+        showToast("Catatan absensi dihapus!");
+      }
+    );
+  }
+
+  /******************************************************************
+   * 9. MENU KASBON KARYAWAN
+   ******************************************************************/
+  function saveKasbon(e) {
+    e.preventDefault();
+    const tanggal = document.getElementById("kasTanggal").value;
+    const karyawanId = document.getElementById("kasKaryawanId").value;
+    const nominal = Number(document.getElementById("kasNominal").value);
+    const keterangan = document.getElementById("kasKeterangan").value.trim();
+    const emp = state.karyawan.find(k => k.id === karyawanId);
+
+    if (!emp) {
+      showToast("Pilih karyawan terlebih dahulu!", true);
+      return;
+    }
+
+    const record = {
+      id: "KAS" + Date.now().toString().slice(-6),
+      tanggal,
+      karyawanId,
+      namaKaryawan: emp.nama,
+      nominal,
+      keterangan,
+      status: "BELUM_LUNAS"
+    };
+
+    state.kasbon.unshift(record);
+    document.getElementById("kasNominal").value = "";
+    document.getElementById("kasKeterangan").value = "";
+
+    saveLocalState("ADD_KASBON", record);
+    renderAll();
+    showToast("Kasbon berhasil dicatat!");
+  }
+
+  function toggleStatusKasbon(id) {
+    if (currentUser.role === "karyawan") return;
+    const item = state.kasbon.find(k => k.id === id);
+    if (!item) return;
+    item.status = item.status === "BELUM_LUNAS" ? "LUNAS" : "BELUM_LUNAS";
+    saveLocalState("UPDATE_KASBON", item);
+    renderAll();
+    showToast(`Status kasbon diubah ke ${item.status}`);
+  }
+
+  function deleteKasbon(id) {
+    askConfirm(
+      "Hapus Catatan Kasbon?",
+      "Data kasbon ini akan dihapus secara permanen.",
+      () => {
+        state.kasbon = state.kasbon.filter(k => k.id !== id);
+        saveLocalState("DELETE_KASBON", { id });
+        renderAll();
+        showToast("Data kasbon berhasil dihapus!");
+      }
+    );
+  }
+
+  function renderKasbon() {
+    const listEl = document.getElementById("kasbonList");
+    const statusFilter = document.getElementById("filterKasStatus").value;
+
+    let rows = state.kasbon;
+    if (currentUser.role === "karyawan") {
+      rows = rows.filter(k => k.karyawanId === currentUser.id);
+    }
+    if (statusFilter !== "ALL") {
+      rows = rows.filter(k => k.status === statusFilter);
+    }
+
+    if (rows.length === 0) {
+      listEl.innerHTML = `<div class="bg-white rounded-2xl p-5 text-center text-xs text-slate-400">Tidak ada catatan kasbon.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = rows.map(k => {
+      const emp = state.karyawan.find(x => x.id === k.karyawanId);
+      const nama = emp ? emp.nama : (k.namaKaryawan || "Karyawan");
+      const isBelum = k.status === "BELUM_LUNAS";
+      return `
+        <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-extrabold text-slate-800 truncate">${nama}</span>
+              <span onclick="toggleStatusKasbon('${k.id}')" class="cursor-pointer px-2 py-0.5 rounded-md text-[10px] font-bold ${isBelum ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}">
+                ${isBelum ? 'Belum Lunas' : 'Lunas'}
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-0.5">${k.tanggal} • ${k.keterangan}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <p class="text-xs font-extrabold ${isBelum ? 'text-rose-600' : 'text-slate-400 line-through'}">${formatRp(k.nominal)}</p>
+            ${currentUser.role !== "karyawan" ? `
+              <button type="button" onclick="deleteKasbon('${k.id}')" class="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs flex items-center justify-center">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            ` : ``}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  /******************************************************************
+   * 10. MENU GAJI AKHIR, SLIP INDIVIDU & DOWNLOAD REKAP SEMUA KARYAWAN
+   ******************************************************************/
+  function calculatePayrollForEmp(emp, startDate, endDate) {
+    const abs = state.absensi.filter(a =>
+      a.karyawanId === emp.id &&
+      (!startDate || a.tanggal >= startDate) &&
+      (!endDate || a.tanggal <= endDate)
+    );
+
+    const jmlFull = abs.filter(a => a.tipe === "FULL").length;
+    const jmlHalf = abs.filter(a => a.tipe === "HALF").length;
+    const totalJamLembur = abs.reduce((sum, a) => sum + Number(a.jamLembur || 0), 0);
+
+    const totalUpahFull = jmlFull * emp.gajiHarian;
+    const totalUpahHalf = jmlHalf * (emp.gajiHarian * 0.5);
+    const totalUpahLembur = totalJamLembur * emp.lemburJam;
+    const gajiKotor = totalUpahFull + totalUpahHalf + totalUpahLembur;
+
+    const kasbonAktif = state.kasbon
+      .filter(k => k.karyawanId === emp.id && k.status === "BELUM_LUNAS")
+      .reduce((sum, k) => sum + Number(k.nominal || 0), 0);
+
+    const gajiBersih = gajiKotor - kasbonAktif;
+
+    return {
+      emp,
+      jmlFull,
+      jmlHalf,
+      totalJamLembur,
+      totalUpahFull,
+      totalUpahHalf,
+      totalUpahLembur,
+      gajiKotor,
+      kasbonAktif,
+      gajiBersih
+    };
+  }
+
+  function getAllPayrollsForCurrentPeriod() {
+    const startDate = document.getElementById("gajiStartDate").value;
+    const endDate = document.getElementById("gajiEndDate").value;
+    const emps = currentUser && currentUser.role === "karyawan"
+      ? state.karyawan.filter(k => k.id === currentUser.id)
+      : state.karyawan;
+
+    const list = emps.map(emp => calculatePayrollForEmp(emp, startDate, endDate));
+    const totals = list.reduce((acc, p) => {
+      acc.jmlFull += p.jmlFull;
+      acc.jmlHalf += p.jmlHalf;
+      acc.totalJamLembur += p.totalJamLembur;
+      acc.totalUpahFull += p.totalUpahFull;
+      acc.totalUpahHalf += p.totalUpahHalf;
+      acc.totalUpahLembur += p.totalUpahLembur;
+      acc.gajiKotor += p.gajiKotor;
+      acc.kasbonAktif += p.kasbonAktif;
+      acc.gajiBersih += p.gajiBersih;
+      return acc;
+    }, {
+      jmlFull: 0, jmlHalf: 0, totalJamLembur: 0,
+      totalUpahFull: 0, totalUpahHalf: 0, totalUpahLembur: 0,
+      gajiKotor: 0, kasbonAktif: 0, gajiBersih: 0
+    });
+
+    return { startDate, endDate, list, totals };
+  }
+
+  function renderGajiAkhir() {
+    const { list, totals } = getAllPayrollsForCurrentPeriod();
+    const listEl = document.getElementById("gajiList");
+
+    document.getElementById("rekapCountEmp").textContent = list.length;
+    document.getElementById("rekapGrandTotalBersih").textContent = formatRp(totals.gajiBersih);
+    document.getElementById("rekapGrandTotalKotor").textContent = formatRp(totals.gajiKotor);
+    document.getElementById("rekapGrandTotalKasbon").textContent = "- " + formatRp(totals.kasbonAktif);
+
+    if (list.length === 0) {
+      listEl.innerHTML = `<div class="bg-white rounded-2xl p-6 text-center text-xs text-slate-400">Belum ada data karyawan untuk dihitung.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = list.map(p => {
+      const emp = p.emp;
+      return `
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div>
+              <h4 class="text-sm font-extrabold text-slate-800">${emp.nama}</h4>
+              <p class="text-[11px] text-slate-400">${emp.hp}</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 block">Gaji Bersih Akhir</span>
+              <span class="text-base font-extrabold text-indigo-600">${formatRp(p.gajiBersih)}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center bg-slate-50 p-2.5 rounded-xl text-[11px]">
+            <div>
+              <span class="text-slate-400 block text-[10px]">Harian Full</span>
+              <span class="font-bold text-slate-700">${p.jmlFull} Hari</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">Setengah Hari</span>
+              <span class="font-bold text-slate-700">${p.jmlHalf}x</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">Total Lembur</span>
+              <span class="font-bold text-emerald-600">${p.totalJamLembur} Jam</span>
+            </div>
+          </div>
+
+          <div class="text-xs space-y-1">
+            <div class="flex justify-between text-slate-600">
+              <span>Gaji Kotor (Upah + Lembur):</span>
+              <span class="font-bold">${formatRp(p.gajiKotor)}</span>
+            </div>
+            <div class="flex justify-between text-rose-600">
+              <span>Potongan Kasbon Aktif:</span>
+              <span class="font-bold">- ${formatRp(p.kasbonAktif)}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <button onclick="openSlipGaji('${emp.id}')" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-receipt"></i> Lihat & Cetak Slip Gaji
+            </button>
+            ${(currentUser.role === "admin" && p.kasbonAktif > 0) ? `
+              <button onclick="lunasiKasbonKaryawan('${emp.id}')" class="px-3 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold" title="Potong & Tandai Lunas Kasbon">
+                <i class="fa-solid fa-check-double"></i> Potong Kasbon
+              </button>
+            ` : ``}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function downloadRekapGajiCSV() {
+    const { startDate, endDate, list, totals } = getAllPayrollsForCurrentPeriod();
+    if (list.length === 0) {
+      showToast("Belum ada data karyawan untuk diunduh!", true);
+      return;
+    }
+
+    const headers = [
+      "No",
+      "ID Karyawan",
+      "Nama Karyawan",
+      "No HP",
+      "Alamat",
+      "Gaji Harian (Rp)",
+      "Ongkos Lembur/Jam (Rp)",
+      "Harian Full (Hari)",
+      "Setengah Hari (Kali)",
+      "Total Jam Lembur",
+      "Total Upah Full (Rp)",
+      "Total Upah 1/2 Hari (Rp)",
+      "Total Upah Lembur (Rp)",
+      "Gaji Kotor (Rp)",
+      "Potongan Kasbon (Rp)",
+      "Gaji Bersih Diterima (Rp)"
+    ];
+
+    const escapeCsv = (val) => {
+      const s = String(val ?? "").replace(/"/g, '""');
+      return `"${s}"`;
+    };
+
+    const rows = list.map((p, idx) => [
+      idx + 1,
+      p.emp.id,
+      p.emp.nama,
+      p.emp.hp,
+      p.emp.alamat,
+      p.emp.gajiHarian,
+      p.emp.lemburJam,
+      p.jmlFull,
+      p.jmlHalf,
+      p.totalJamLembur,
+      p.totalUpahFull,
+      p.totalUpahHalf,
+      p.totalUpahLembur,
+      p.gajiKotor,
+      p.kasbonAktif,
+      p.gajiBersih
+    ].map(escapeCsv).join(","));
+
+    const totalRow = [
+      "",
+      "",
+      "TOTAL KESELURUHAN",
+      "",
+      "",
+      "",
+      "",
+      totals.jmlFull,
+      totals.jmlHalf,
+      totals.totalJamLembur,
+      totals.totalUpahFull,
+      totals.totalUpahHalf,
+      totals.totalUpahLembur,
+      totals.gajiKotor,
+      totals.kasbonAktif,
+      totals.gajiBersih
+    ].map(escapeCsv).join(",");
+
+    const titleLines = [
+      `"REKAPITULASI GAJI SEMUA KARYAWAN - WORKFORCE PRO"`,
+      `"Periode: ${startDate || '-'} s/d ${endDate || '-'}"`,
+      `""`
+    ];
+
+    const csvContent = "\uFEFF" + [...titleLines, headers.map(escapeCsv).join(","), ...rows, totalRow].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Rekap_Gaji_Karyawan_${startDate || 'All'}_sd_${endDate || 'All'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast("File Excel (CSV) Rekap Gaji berhasil diunduh!");
+  }
+
+  function openModalRekapSemua() {
+    const { startDate, endDate, list, totals } = getAllPayrollsForCurrentPeriod();
+    if (list.length === 0) {
+      showToast("Belum ada data karyawan untuk direkap!", true);
+      return;
+    }
+
+    document.getElementById("rekapModalPeriode").textContent = `Periode: ${startDate || '-'} s/d ${endDate || '-'}`;
+
+    document.getElementById("rekapModalTableBody").innerHTML = list.map((p, idx) => `
+      <tr>
+        <td class="py-2 px-1.5 font-bold text-slate-900">
+          ${idx + 1}. ${p.emp.nama}
+          <span class="block text-[9px] font-normal text-slate-500">${p.emp.hp}</span>
+        </td>
+        <td class="py-2 px-1 text-center font-semibold">
+          ${p.jmlFull}F / ${p.jmlHalf}H
+        </td>
+        <td class="py-2 px-1 text-center text-emerald-700 font-bold">
+          ${p.totalJamLembur} Jam
+        </td>
+        <td class="py-2 px-1.5 text-right font-semibold">
+          ${formatRp(p.gajiKotor)}
+        </td>
+        <td class="py-2 px-1.5 text-right text-rose-600 font-semibold">
+          -${formatRp(p.kasbonAktif)}
+        </td>
+        <td class="py-2 px-1.5 text-right font-extrabold text-indigo-700">
+          ${formatRp(p.gajiBersih)}
+        </td>
+      </tr>
+    `).join("");
+
+    document.getElementById("rekapModalTableFoot").innerHTML = `
+      <tr>
+        <td class="py-2.5 px-1.5">TOTAL (${list.length} Org)</td>
+        <td class="py-2.5 px-1 text-center">${totals.jmlFull}F / ${totals.jmlHalf}H</td>
+        <td class="py-2.5 px-1 text-center text-emerald-700">${totals.totalJamLembur} Jam</td>
+        <td class="py-2.5 px-1.5 text-right">${formatRp(totals.gajiKotor)}</td>
+        <td class="py-2.5 px-1.5 text-right text-rose-600">-${formatRp(totals.kasbonAktif)}</td>
+        <td class="py-2.5 px-1.5 text-right text-indigo-700">${formatRp(totals.gajiBersih)}</td>
+      </tr>
+    `;
+
+    openModal("modalRekapSemua");
+  }
+
+  function printSlipIndividu() {
+    document.body.classList.remove("print-mode-rekap");
+    document.body.classList.add("print-mode-slip");
+    window.print();
+  }
+
+  function printRekapSemua() {
+    document.body.classList.remove("print-mode-slip");
+    document.body.classList.add("print-mode-rekap");
+    window.print();
+  }
+
+  function openSlipGaji(empId) {
+    const startDate = document.getElementById("gajiStartDate").value;
+    const endDate = document.getElementById("gajiEndDate").value;
+    const emp = state.karyawan.find(k => k.id === empId);
+    if (!emp) return;
+
+    const p = calculatePayrollForEmp(emp, startDate, endDate);
+
+    document.getElementById("slipPeriode").textContent = `Periode: ${startDate} s/d ${endDate}`;
+    document.getElementById("slipNama").textContent = emp.nama;
+    document.getElementById("slipHp").textContent = emp.hp;
+    document.getElementById("slipAlamat").textContent = emp.alamat;
+
+    document.getElementById("slipLabelFull").textContent = `Harian Full (${p.jmlFull} hr × ${formatRp(emp.gajiHarian)})`;
+    document.getElementById("slipValFull").textContent = formatRp(p.totalUpahFull);
+
+    document.getElementById("slipLabelHalf").textContent = `Setengah Hari (${p.jmlHalf}x × ${formatRp(emp.gajiHarian * 0.5)})`;
+    document.getElementById("slipValHalf").textContent = formatRp(p.totalUpahHalf);
+
+    document.getElementById("slipLabelLembur").textContent = `Lembur (${p.totalJamLembur} jam × ${formatRp(emp.lemburJam)})`;
+    document.getElementById("slipValLembur").textContent = formatRp(p.totalUpahLembur);
+
+    document.getElementById("slipSubtotal").textContent = formatRp(p.gajiKotor);
+    document.getElementById("slipKasbon").textContent = "- " + formatRp(p.kasbonAktif);
+    document.getElementById("slipTotalBersih").textContent = formatRp(p.gajiBersih);
+
+    const waText = encodeURIComponent(
+      `*SLIP GAJI KARYAWAN*\n` +
+      `Periode: ${startDate} s/d ${endDate}\n` +
+      `Nama: *${emp.nama}*\n` +
+      `------------------------\n` +
+      `• Harian Full (${p.jmlFull} hr): ${formatRp(p.totalUpahFull)}\n` +
+      `• Setengah Hari (${p.jmlHalf}x): ${formatRp(p.totalUpahHalf)}\n` +
+      `• Lembur (${p.totalJamLembur} jam): ${formatRp(p.totalUpahLembur)}\n` +
+      `Subtotal: *${formatRp(p.gajiKotor)}*\n` +
+      `Potongan Kasbon: *- ${formatRp(p.kasbonAktif)}*\n` +
+      `------------------------\n` +
+      `*GAJI BERSIH: ${formatRp(p.gajiBersih)}*`
+    );
+    const cleanPhone = emp.hp.replace(/^0/, "62").replace(/\D/g, "");
+    document.getElementById("btnWaSlip").onclick = () => {
+      window.open(`https://wa.me/${cleanPhone}?text=${waText}`, "_blank");
+    };
+
+    openModal("modalSlipGaji");
+  }
+
+  function lunasiKasbonKaryawan(empId) {
+    askConfirm(
+      "Potong & Lunasi Kasbon?",
+      "Semua kasbon aktif karyawan ini akan ditandai sebagai LUNAS karena telah dipotong dari gaji.",
+      () => {
+        state.kasbon.forEach(k => {
+          if (k.karyawanId === empId && k.status === "BELUM_LUNAS") {
+            k.status = "LUNAS";
+          }
+        });
+        saveLocalState("SETTLE_KASBON", { karyawanId: empId });
+        renderAll();
+        showToast("Kasbon berhasil dipotong & dilunasi!");
+      }
+    );
+  }
+
+  /******************************************************************
+   * 11. HELPER UI & INITIALIZATION
+   ******************************************************************/
+  function updateHeaderStats() {
+    document.getElementById("statTotalKaryawan").textContent = `${state.karyawan.length} Orang`;
+    const hadirToday = new Set(state.absensi.filter(a => a.tanggal === todayStr).map(a => a.karyawanId)).size;
+    document.getElementById("statHadirHariIni").textContent = `${hadirToday} Orang`;
+
+    const totalKasbon = state.kasbon
+      .filter(k => k.status === "BELUM_LUNAS")
+      .reduce((sum, k) => sum + Number(k.nominal || 0), 0);
+    document.getElementById("statTotalKasbon").textContent = formatRp(totalKasbon);
+  }
+
+  function openModal(id) {
+    if (id === "modalCloudConfig") {
+      const cfg = getCloudConfig();
+      document.getElementById("cfgFirebaseApiKey").value = cfg.firebaseApiKey || "";
+      document.getElementById("cfgFirestoreProjectId").value = cfg.firestoreProjectId || "";
+      document.getElementById("cfgFirebaseUrl").value = cfg.firebaseDbUrl || "";
+      document.getElementById("cfgGasUrl").value = cfg.gasWebAppUrl || "";
+      document.getElementById("cfgGasToken").value = cfg.gasToken || "";
+      document.getElementById("cfgAdminPin").value = cfg.adminPin || "1234";
+      document.getElementById("cfgMandorPin").value = cfg.mandorPin || "1234";
+    }
+    document.getElementById(id).classList.remove("hidden");
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.add("hidden");
+  }
+
+  function renderAll() {
+    if (!currentUser) return;
+    updateHeaderStats();
+    renderKaryawan();
+    renderBulkChecklist();
+    renderAbsensi();
+    renderKasbon();
+    renderGajiAkhir();
+  }
+
+  loadLocalState();
+  restoreSessionOnLoad();
+</script>
+</body>
+</html>
